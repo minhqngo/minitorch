@@ -42,7 +42,10 @@ def index_to_position(index: Index, strides: Strides) -> int:
     Returns:
         Position in storage
     """
-    return int(np.dot(index, strides))
+    position = 0
+    for i in range(len(strides)):
+        position += index[i] * strides[i]
+    return int(position)
 
 
 def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
@@ -58,12 +61,13 @@ def to_index(ordinal: int, shape: Shape, out_index: OutIndex) -> None:
         out_index : return index corresponding to position.
 
     """
+    local_ordinal = ordinal
     for i in range(len(shape) - 1, -1, -1):
         if shape[i] == 0:
             out_index[i] = 0
             continue
-        out_index[i] = ordinal % shape[i]
-        ordinal = ordinal // shape[i]
+        out_index[i] = local_ordinal % shape[i]
+        local_ordinal = local_ordinal // shape[i]
 
 
 def broadcast_index(
