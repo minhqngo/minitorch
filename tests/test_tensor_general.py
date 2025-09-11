@@ -18,23 +18,16 @@ SimpleBackend = minitorch.TensorBackend(minitorch.SimpleOps)
 FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
 shared: Dict[str, TensorBackend] = {"fast": FastTensorBackend}
 
-# ## Task 3.1
 backend_tests = [pytest.param("fast", marks=pytest.mark.fast_ops)]
 
-# ## Task 3.2
 matmul_tests = [pytest.param("fast", marks=pytest.mark.fast_ops)]
 
 
 if numba.cuda.is_available():
-    # ## Task 3.3
     backend_tests.append(pytest.param("cuda", marks=pytest.mark.cuda_ops))
 
-    # ## Task 3.4
     matmul_tests.append(pytest.param("cuda", marks=pytest.mark.cuda_ops))
     shared["cuda"] = minitorch.TensorBackend(minitorch.CudaOps)
-
-
-# ## Task 3.1 and 3.3
 
 
 @given(lists(small_floats, min_size=1))
@@ -346,11 +339,6 @@ def test_mm2() -> None:
         assert_close(c[ind], c2[ind])
 
     minitorch.grad_check(lambda a, b: a @ b, a, b)
-
-
-# ## Task 3.2 and 3.4
-
-# Matrix Multiplication
 
 
 @given(data())

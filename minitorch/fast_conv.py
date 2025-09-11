@@ -80,8 +80,22 @@ def _tensor_conv1d(
     s1 = input_strides
     s2 = weight_strides
 
-    # TODO: Implement for Task 4.1.
-    raise NotImplementedError('Need to implement for Task 4.1')
+    s1_b, s1_c, s1_w = s1[0], s1[1], s1[2]
+    s2_oc, s2_ic, s2_k = s2[0], s2[1], s2[2]
+    for i in prange(out_size):
+        b = i // (out_channels * out_width)
+        oc = (i // out_width) % out_channels
+        ow = i % out_width
+        
+        total = 0.0
+        for ic in range(in_channels):
+            for k in range(kw):
+                iw = ow - k if reverse else ow + k
+                if iw >= 0 and iw < width:
+                    in_pos = b * s1_b + ic * s1_c + iw * s1_w
+                    w_pos = oc * s2_oc + ic * s2_ic + k * s2_k
+                    total += input[in_pos] * weight[w_pos]
+        out[i] = total
 
 
 tensor_conv1d = njit(parallel=True)(_tensor_conv1d)
@@ -190,7 +204,7 @@ def _tensor_conv2d(
         weight_strides (Strides): strides for `input` tensor.
         reverse (bool): anchor weight at top-left or bottom-right
     """
-    batch_, out_channels, _, _ = out_shape
+    batch_, out_channels, out_height, out_width = out_shape
     batch, in_channels, height, width = input_shape
     out_channels_, in_channels_, kh, kw = weight_shape
 
@@ -206,8 +220,26 @@ def _tensor_conv2d(
     s10, s11, s12, s13 = s1[0], s1[1], s1[2], s1[3]
     s20, s21, s22, s23 = s2[0], s2[1], s2[2], s2[3]
 
-    # TODO: Implement for Task 4.2.
-    raise NotImplementedError('Need to implement for Task 4.2')
+    s1_b, s1_c, s1_h, s1_w = s1[0], s1[1], s1[2], s1[3]
+    s2_oc, s2_ic, s2_kh, s2_kw = s2[0], s2[1], s2[2], s2[3]
+    for i in prange(out_size):
+        b = i // (out_channels * out_height * out_width)
+        oc = (i // (out_height * out_width)) % out_channels
+        oh = (i // out_width) % out_height
+        ow = i % out_width
+
+        total = 0.0
+        for ic in range(in_channels):
+            for kh_i in range(kh):
+                for kw_i in range(kw):
+                    ih = oh - kh_i if reverse else oh + kh_i
+                    iw = ow - kw_i if reverse else ow + kw_i
+                    
+                    if ih >= 0 and ih < height and iw >= 0 and iw < width:
+                        in_pos = b * s1_b + ic * s1_c + ih * s1_h + iw * s1_w
+                        w_pos = oc * s2_oc + ic * s2_ic + kh_i * s2_kh + kw_i * s2_kw
+                        total += input[in_pos] * weight[w_pos]
+        out[i] = total
 
 
 tensor_conv2d = njit(parallel=True, fastmath=True)(_tensor_conv2d)
