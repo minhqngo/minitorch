@@ -45,7 +45,6 @@ jobs:
         pytest tests -x -m fast_ops
         pytest tests -x -m cuda_ops
         echo "NN tests"
-        pytest tests -x -m cuda_ops
         pytest tests -x -m fast_conv
         pytest tests -x -m nn_layers
         pytest tests -x -m cuda_conv
