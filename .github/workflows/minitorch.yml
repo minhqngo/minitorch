@@ -41,13 +41,11 @@ jobs:
         echo "Tensor tests"
         pytest tests -x -m tensor_data
         pytest tests -x -m tensor_fn
-        echo "Module 3"
-        pytest tests -x -m task3_1
-        pytest tests -x -m task3_2
-        pytest tests -x -m task3_3
-        pytest tests -x -m task3_4
-        echo "Module 4"
-        pytest tests -x -m task4_1
-        pytest tests -x -m task4_2
-        pytest tests -x -m task4_3
-        pytest tests -x -m task4_4
+        echo "CPU and CUDA operators tests"
+        pytest tests -x -m fast_ops
+        pytest tests -x -m cuda_ops
+        echo "NN tests"
+        pytest tests -x -m cuda_ops
+        pytest tests -x -m fast_conv
+        pytest tests -x -m nn_layers
+        pytest tests -x -m cuda_conv

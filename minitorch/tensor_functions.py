@@ -355,12 +355,16 @@ def tensor(
     def shape(ls: Any) -> List[int]:
         if isinstance(ls, (list, tuple)):
             return [len(ls)] + shape(ls[0])
+        elif isinstance(ls, np.ndarray):
+            return list(ls.shape)
         else:
             return []
 
     def flatten(ls: Any) -> List[float]:
         if isinstance(ls, (list, tuple)):
             return [y for x in ls for y in flatten(x)]
+        elif isinstance(ls, np.ndarray):
+            return ls.flatten().tolist()
         else:
             return [ls]
 
