@@ -28,23 +28,47 @@ jobs:
     #     flake8 --ignore "N801, E203, E266, E501, W503, F812, F401, F841, E741, N803, N802, N806" minitorch/ tests/ project/
     - name: Test with pytest
       run: |
-        echo "Basic functionalities tests"
+        echo "basic_math_ops test"
         pytest tests -x -m basic_math_ops
+        
+        echo "basic_math_properties test"
         pytest tests -x -m basic_math_properties
+        
+        echo "high_order_fn test"
         pytest tests -x -m high_order_fn
+        
+        echo "test_module_simple test"
         pytest tests -x -m test_module_simple
-        echo "Autodiff tests"
+        
+        echo "scalar test"
         pytest tests -x -m scalar
+        
+        echo "derivative test"
         pytest tests -x -m derivative
+        
+        echo "chain_rule test"
         pytest tests -x -m chain_rule
+        
+        echo "backprop test"
         pytest tests -x -m backprop
-        echo "Tensor tests"
+        
+        echo "tensor_data test"
         pytest tests -x -m tensor_data
+        
+        echo "tensor_fn test"
         pytest tests -x -m tensor_fn
-        echo "CPU and CUDA operators tests"
+        
+        echo "fast_ops test"
         pytest tests -x -m fast_ops
+        
+        echo "cuda_ops test"
         pytest tests -x -m cuda_ops
-        echo "NN tests"
+        
+        echo "fast_conv test"
         pytest tests -x -m fast_conv
+        
+        echo "nn_layers test"
         pytest tests -x -m nn_layers
+        
+        echo "cuda_conv test"
         pytest tests -x -m cuda_conv
