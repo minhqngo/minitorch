@@ -6,7 +6,7 @@ import numpy as np
 from typing_extensions import Protocol
 
 from . import operators
-from .tensor_data import (
+from .data import (
     MAX_DIMS,
     broadcast_index,
     index_to_position,
@@ -16,7 +16,7 @@ from .tensor_data import (
 
 if TYPE_CHECKING:
     from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from .data import Index, Shape, Storage, Strides
 
 
 class MapProto(Protocol):

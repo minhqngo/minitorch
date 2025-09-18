@@ -9,10 +9,10 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from . import operators
-from .autodiff import Context, Variable, backpropagate
-from .tensor_data import TensorData
-from .tensor_functions import (
+from .. import common_operators
+from ..autodiff import Context, Variable, backpropagate
+from .data import TensorData
+from .functions import (
     EQ,
     LT,
     Add,
@@ -38,9 +38,9 @@ if TYPE_CHECKING:
 
     import numpy.typing as npt
 
-    from .tensor_data import Shape, Storage, Strides, UserIndex, UserShape, UserStrides
-    from .tensor_functions import Function
-    from .tensor_ops import TensorBackend
+    from .data import Shape, Storage, Strides, UserIndex, UserShape, UserStrides
+    from .functions import Function
+    from .operators import TensorBackend
 
     TensorLike = Union[float, int, "Tensor"]
 
@@ -303,7 +303,7 @@ class Tensor:
     def zeros(self, shape: Optional[UserShape] = None) -> Tensor:
         def zero(shape: UserShape) -> Tensor:
             return Tensor.make(
-                [0.0] * int(operators.prod(shape)), shape, backend=self.backend
+                [0.0] * int(common_operators.prod(shape)), shape, backend=self.backend
             )
 
         if shape is None:
@@ -332,7 +332,7 @@ class Tensor:
         assert self.is_leaf(), "Only leaf variables can have derivatives."
         if self.grad is None:
             self.grad = Tensor.make(
-                [0] * int(operators.prod(self.shape)), self.shape, backend=self.backend
+                [0] * int(common_operators.prod(self.shape)), self.shape, backend=self.backend
             )
         self.grad += x
 

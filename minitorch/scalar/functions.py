@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING
 
 import minitorch
 
-from . import operators
-from .autodiff import Context
+from .. import common_operators
+from ..autodiff import Context
 
 if TYPE_CHECKING:
     from typing import Tuple
@@ -86,12 +86,12 @@ class Log(ScalarFunction):
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
         ctx.save_for_backward(a)
-        return operators.log(a)
+        return common_operators.log(a)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> float:
         (a,) = ctx.saved_values
-        return operators.log_back(a, d_output)
+        return common_operators.log_back(a, d_output)
 
 
 class Mul(ScalarFunction):
@@ -100,7 +100,7 @@ class Mul(ScalarFunction):
     @staticmethod
     def forward(ctx: Context, a: float, b: float) -> float:
         ctx.save_for_backward(a, b)
-        return operators.mul(a, b)
+        return common_operators.mul(a, b)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> Tuple[float, float]:
@@ -114,12 +114,12 @@ class Inv(ScalarFunction):
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
         ctx.save_for_backward(a)
-        return operators.inv(a)
+        return common_operators.inv(a)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> float:
         (a,) = ctx.saved_values
-        return operators.inv_back(a, d_output)
+        return common_operators.inv_back(a, d_output)
 
 
 class Neg(ScalarFunction):
@@ -127,7 +127,7 @@ class Neg(ScalarFunction):
 
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
-        return operators.neg(a)
+        return common_operators.neg(a)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> float:
@@ -139,7 +139,7 @@ class Sigmoid(ScalarFunction):
 
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
-        s = operators.sigmoid(a)
+        s = common_operators.sigmoid(a)
         ctx.save_for_backward(s)
         return s
 
@@ -155,12 +155,12 @@ class ReLU(ScalarFunction):
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
         ctx.save_for_backward(a)
-        return operators.relu(a)
+        return common_operators.relu(a)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> float:
         (a,) = ctx.saved_values
-        return operators.relu_back(a, d_output)
+        return common_operators.relu_back(a, d_output)
 
 
 class Exp(ScalarFunction):
@@ -168,7 +168,7 @@ class Exp(ScalarFunction):
 
     @staticmethod
     def forward(ctx: Context, a: float) -> float:
-        e = operators.exp(a)
+        e = common_operators.exp(a)
         ctx.save_for_backward(e)
         return e
 
@@ -183,7 +183,7 @@ class LT(ScalarFunction):
 
     @staticmethod
     def forward(ctx: Context, a: float, b: float) -> float:
-        return operators.lt(a, b)
+        return common_operators.lt(a, b)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> Tuple[float, float]:
@@ -195,7 +195,7 @@ class EQ(ScalarFunction):
 
     @staticmethod
     def forward(ctx: Context, a: float, b: float) -> float:
-        return operators.eq(a, b)
+        return common_operators.eq(a, b)
 
     @staticmethod
     def backward(ctx: Context, d_output: float) -> Tuple[float, float]:

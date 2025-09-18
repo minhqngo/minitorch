@@ -5,8 +5,8 @@ from typing import Any, Iterable, Optional, Sequence, Tuple, Type, Union
 
 import numpy as np
 
-from .autodiff import Context, Variable, backpropagate, central_difference
-from .scalar_functions import (
+from ..autodiff import Context, Variable, backpropagate, central_difference
+from .functions import (
     EQ,
     LT,
     Add,

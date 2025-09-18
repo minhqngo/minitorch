@@ -57,7 +57,7 @@ def test_simple(a: float, b: float) -> None:
 
     # Simple relu
     c = Scalar(a).relu() + Scalar(b).relu()
-    assert_close(c.data, minitorch.operators.relu(a) + minitorch.operators.relu(b))
+    assert_close(c.data, minitorch.common_operators.relu(a) + minitorch.common_operators.relu(b))
 
 
 one_arg, two_arg, _ = MathTestVariable._comp_testing()

@@ -3,9 +3,6 @@ from typing import Any, Iterable, List, Tuple
 
 from typing_extensions import Protocol
 
-# ## Task 1.1
-# Central Difference calculation
-
 
 def central_difference(f: Any, *vals: Any, arg: int = 0, epsilon: float = 1e-6) -> Any:
     r"""

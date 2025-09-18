@@ -9,7 +9,7 @@ import numpy.typing as npt
 from numpy import array, float64
 from typing_extensions import TypeAlias
 
-from .operators import prod
+from ..common_operators import prod
 
 MAX_DIMS = 32
 

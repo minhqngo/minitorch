@@ -2,7 +2,7 @@
 
 from typing import Callable, Generic, Iterable, Tuple, TypeVar
 
-import minitorch.operators as operators
+import minitorch.common_operators as common_operators
 
 A = TypeVar("A")
 
@@ -46,31 +46,31 @@ class MathTest(Generic[A]):
     @staticmethod
     def inv(a: A) -> A:
         "Invert after adding"
-        return operators.inv(a + 3.5)
+        return common_operators.inv(a + 3.5)
 
     @staticmethod
     def sig(a: A) -> A:
         "Apply sigmoid"
-        return operators.sigmoid(a)
+        return common_operators.sigmoid(a)
 
     @staticmethod
     def log(a: A) -> A:
         "Apply log to a large value"
-        return operators.log(a + 100000)
+        return common_operators.log(a + 100000)
 
     @staticmethod
     def relu(a: A) -> A:
         "Apply relu"
-        return operators.relu(a + 5.5)
+        return common_operators.relu(a + 5.5)
 
     @staticmethod
     def exp(a: A) -> A:
         "Apply exp to a smaller value"
-        return operators.exp(a - 200)
+        return common_operators.exp(a - 200)
 
     @staticmethod
     def explog(a: A) -> A:
-        return operators.log(a + 100000) + operators.exp(a - 200)
+        return common_operators.log(a + 100000) + common_operators.exp(a - 200)
 
     @staticmethod
     def add2(a: A, b: A) -> A:
@@ -89,34 +89,34 @@ class MathTest(Generic[A]):
 
     @staticmethod
     def gt2(a: A, b: A) -> A:
-        return operators.lt(b, a + 1.2)
+        return common_operators.lt(b, a + 1.2)
 
     @staticmethod
     def lt2(a: A, b: A) -> A:
-        return operators.lt(a + 1.2, b)
+        return common_operators.lt(a + 1.2, b)
 
     @staticmethod
     def eq2(a: A, b: A) -> A:
-        return operators.eq(a, (b + 5.5))
+        return common_operators.eq(a, (b + 5.5))
 
     @staticmethod
     def sum_red(a: Iterable[A]) -> A:
-        return operators.sum(a)
+        return common_operators.sum(a)
 
     @staticmethod
     def mean_red(a: Iterable[A]) -> A:
-        return operators.sum(a) / float(len(a))
+        return common_operators.sum(a) / float(len(a))
 
     @staticmethod
     def mean_full_red(a: Iterable[A]) -> A:
-        return operators.sum(a) / float(len(a))
+        return common_operators.sum(a) / float(len(a))
 
     @staticmethod
     def complex(a: A) -> A:
         return (
-            operators.log(
-                operators.sigmoid(
-                    operators.relu(operators.relu(a * 10 + 7) * 6 + 5) * 10
+            common_operators.log(
+                common_operators.sigmoid(
+                    common_operators.relu(common_operators.relu(a * 10 + 7) * 6 + 5) * 10
                 )
             )
             / 50
