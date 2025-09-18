@@ -14,7 +14,7 @@ class Network(minitorch.Module):
 
     def forward(self, x):
         y = self.linear(x)
-        return minitorch.operators.sigmoid(y[0])
+        return minitorch.common_operators.sigmoid(y[0])
 
 
 class Linear(minitorch.Module):

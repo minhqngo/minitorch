@@ -3,8 +3,8 @@ from typing import Callable, Optional
 import numba
 from numba import cuda
 
-from .tensor import Tensor
-from .tensor_data import (
+from ..tensor.tensor import Tensor
+from ..tensor.data import (
     MAX_DIMS,
     Shape,
     Storage,
@@ -15,7 +15,7 @@ from .tensor_data import (
     shape_broadcast,
     to_index,
 )
-from .tensor_ops import MapProto, TensorOps
+from ..tensor.operators import MapProto, TensorOps
 
 # This code will CUDA compile fast versions your tensor_data functions.
 # If you get an error, read the docs for NUMBA as to what is allowed

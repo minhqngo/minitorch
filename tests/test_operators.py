@@ -5,7 +5,7 @@ from hypothesis import given
 from hypothesis.strategies import lists
 
 from minitorch import MathTest
-from minitorch.operators import (
+from minitorch.common_operators import (
     add,
     addLists,
     eq,

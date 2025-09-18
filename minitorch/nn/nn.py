@@ -1,9 +1,9 @@
 from typing import Tuple
-from . import operators
-from .autodiff import Context
-from .fast_ops import FastOps
-from .tensor import Tensor
-from .tensor_functions import Function, rand, tensor
+from .. import common_operators
+from ..autodiff import Context
+from ..backends.fast_ops import FastOps
+from ..tensor.tensor import Tensor
+from ..tensor.functions import Function, rand, tensor
 
 
 def tile(input: Tensor, kernel: Tuple[int, int]) -> Tuple[Tensor, int, int]:
@@ -47,7 +47,7 @@ def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
     return out.view(batch, channel, new_height, new_width)
 
 
-max_reduce = FastOps.reduce(operators.max, -1e9)
+max_reduce = FastOps.reduce(common_operators.max, -1e9)
 
 
 def argmax(input: Tensor, dim: int) -> Tensor:

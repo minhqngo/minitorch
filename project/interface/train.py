@@ -13,7 +13,7 @@ import minitorch
 def render_train_interface(
     TrainCls, graph=True, hidden_layer=True, parameter_control=False
 ):
-    datasets_map = minitorch.datasets
+    datasets_map = minitorch.dummy_datasets
     st.write("## Sandbox for Model Training")
 
     st.markdown("### Dataset")

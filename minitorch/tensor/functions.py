@@ -11,15 +11,15 @@ import numpy as np
 
 import minitorch
 
-from . import operators
-from .autodiff import Context
-from .tensor_ops import SimpleBackend, TensorBackend
+from .. import common_operators
+from ..autodiff import Context
+from .operators import SimpleBackend, TensorBackend
 
 if TYPE_CHECKING:
     from typing import Any, List, Tuple
 
     from .tensor import Tensor
-    from .tensor_data import UserIndex, UserShape
+    from .data import UserIndex, UserShape
 
 
 def wrap_tuple(x):  # type: ignore
@@ -178,7 +178,7 @@ class All(Function):
         if dim is not None:
             return a.f.mul_reduce(a, int(dim.item()))
         else:
-            return a.f.mul_reduce(a.contiguous().view(int(operators.prod(a.shape))), 0)
+            return a.f.mul_reduce(a.contiguous().view(int(common_operators.prod(a.shape))), 0)
 
 
 class LT(Function):
@@ -288,7 +288,7 @@ def zeros(shape: UserShape, backend: TensorBackend = SimpleBackend) -> Tensor:
         new tensor
     """
     return minitorch.Tensor.make(
-        [0] * int(operators.prod(shape)), shape, backend=backend
+        [0] * int(common_operators.prod(shape)), shape, backend=backend
     )
 
 
@@ -308,7 +308,7 @@ def rand(
     Returns:
         :class:`Tensor` : new tensor
     """
-    vals = [random.random() for _ in range(int(operators.prod(shape)))]
+    vals = [random.random() for _ in range(int(common_operators.prod(shape)))]
     tensor = minitorch.Tensor.make(vals, shape, backend=backend)
     tensor.requires_grad_(requires_grad)
     return tensor

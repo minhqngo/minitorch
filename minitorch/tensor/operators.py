@@ -5,8 +5,8 @@ from typing import TYPE_CHECKING, Callable, Optional, Type
 import numpy as np
 from typing_extensions import Protocol
 
-from . import operators
-from .tensor_data import (
+from .. import common_operators
+from .data import (
     MAX_DIMS,
     broadcast_index,
     index_to_position,
@@ -16,7 +16,7 @@ from .tensor_data import (
 
 if TYPE_CHECKING:
     from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from .data import Index, Shape, Storage, Strides
 
 
 class MapProto(Protocol):
@@ -66,28 +66,28 @@ class TensorBackend:
         """
 
         # Maps
-        self.neg_map = ops.map(operators.neg)
-        self.sigmoid_map = ops.map(operators.sigmoid)
-        self.relu_map = ops.map(operators.relu)
-        self.log_map = ops.map(operators.log)
-        self.exp_map = ops.map(operators.exp)
-        self.id_map = ops.map(operators.id)
-        self.id_cmap = ops.cmap(operators.id)
-        self.inv_map = ops.map(operators.inv)
+        self.neg_map = ops.map(common_operators.neg)
+        self.sigmoid_map = ops.map(common_operators.sigmoid)
+        self.relu_map = ops.map(common_operators.relu)
+        self.log_map = ops.map(common_operators.log)
+        self.exp_map = ops.map(common_operators.exp)
+        self.id_map = ops.map(common_operators.id)
+        self.id_cmap = ops.cmap(common_operators.id)
+        self.inv_map = ops.map(common_operators.inv)
 
         # Zips
-        self.add_zip = ops.zip(operators.add)
-        self.mul_zip = ops.zip(operators.mul)
-        self.lt_zip = ops.zip(operators.lt)
-        self.eq_zip = ops.zip(operators.eq)
-        self.is_close_zip = ops.zip(operators.is_close)
-        self.relu_back_zip = ops.zip(operators.relu_back)
-        self.log_back_zip = ops.zip(operators.log_back)
-        self.inv_back_zip = ops.zip(operators.inv_back)
+        self.add_zip = ops.zip(common_operators.add)
+        self.mul_zip = ops.zip(common_operators.mul)
+        self.lt_zip = ops.zip(common_operators.lt)
+        self.eq_zip = ops.zip(common_operators.eq)
+        self.is_close_zip = ops.zip(common_operators.is_close)
+        self.relu_back_zip = ops.zip(common_operators.relu_back)
+        self.log_back_zip = ops.zip(common_operators.log_back)
+        self.inv_back_zip = ops.zip(common_operators.inv_back)
 
         # Reduce
-        self.add_reduce = ops.reduce(operators.add, 0.0)
-        self.mul_reduce = ops.reduce(operators.mul, 1.0)
+        self.add_reduce = ops.reduce(common_operators.add, 0.0)
+        self.mul_reduce = ops.reduce(common_operators.mul, 1.0)
         self.matrix_multiply = ops.matrix_multiply
         self.cuda = ops.cuda
 
@@ -263,7 +263,7 @@ def tensor_map(
     ) -> None:
         out_index = np.zeros(len(out_shape), dtype=np.int32)
         in_index = np.zeros(len(in_shape), dtype=np.int32)
-        for i in range(int(operators.prod(out_shape))):
+        for i in range(int(common_operators.prod(out_shape))):
             to_index(i, out_shape, out_index)
             out_pos = index_to_position(out_index, out_strides)
             broadcast_index(out_index, out_shape, in_shape, in_index)
@@ -315,7 +315,7 @@ def tensor_zip(
         out_index = np.zeros(len(out_shape), dtype=np.int32)
         a_index = np.zeros(len(a_shape), dtype=np.int32)
         b_index = np.zeros(len(b_shape), dtype=np.int32)
-        for i in range(int(operators.prod(out_shape))):
+        for i in range(int(common_operators.prod(out_shape))):
             to_index(i, out_shape, out_index)
             out_pos = index_to_position(out_index, out_strides)
 
@@ -355,7 +355,7 @@ def tensor_reduce(
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        for i in range(int(operators.prod(a_shape))):
+        for i in range(int(common_operators.prod(a_shape))):
             a_index = np.zeros(len(a_shape), dtype=np.int32)
             to_index(i, a_shape, a_index)
             a_pos = index_to_position(a_index, a_strides)

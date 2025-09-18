@@ -1,7 +1,7 @@
 from typing import Sequence
 
 from .module import Parameter
-from .scalar import Scalar
+from ..scalar.scalar import Scalar
 
 
 class Optimizer:
