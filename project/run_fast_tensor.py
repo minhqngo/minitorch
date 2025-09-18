@@ -4,7 +4,7 @@ import numba
 
 import minitorch
 
-datasets = minitorch.datasets
+datasets = minitorch.dummy_datasets
 FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
 if numba.cuda.is_available():
     GPUBackend = minitorch.TensorBackend(minitorch.CudaOps)
@@ -120,11 +120,11 @@ if __name__ == "__main__":
     PTS = args.PTS
 
     if args.DATASET == "xor":
-        data = minitorch.datasets["Xor"](PTS)
+        data = minitorch.dummy_datasets["Xor"](PTS)
     elif args.DATASET == "simple":
-        data = minitorch.datasets["Simple"].simple(PTS)
+        data = minitorch.dummy_datasets["Simple"].simple(PTS)
     elif args.DATASET == "split":
-        data = minitorch.datasets["Split"](PTS)
+        data = minitorch.dummy_datasets["Split"](PTS)
 
     HIDDEN = int(args.HIDDEN)
     RATE = args.RATE

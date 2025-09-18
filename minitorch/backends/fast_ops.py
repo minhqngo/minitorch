@@ -5,20 +5,20 @@ from typing import TYPE_CHECKING
 import numpy as np
 from numba import njit, prange
 
-from .tensor_data import (
+from ..tensor.data import (
     MAX_DIMS,
     broadcast_index,
     index_to_position,
     shape_broadcast,
     to_index,
 )
-from .tensor_ops import MapProto, TensorOps
+from ..tensor.operators import MapProto, TensorOps
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
 
-    from .tensor import Tensor
-    from .tensor_data import Index, Shape, Storage, Strides
+    from ..tensor.tensor import Tensor
+    from ..tensor.data import Index, Shape, Storage, Strides
 
 # This code will JIT compile fast versions your tensor_data functions.
 # If you get an error, read the docs for NUMBA as to what is allowed

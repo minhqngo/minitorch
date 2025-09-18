@@ -3,9 +3,9 @@ from typing import Tuple
 import numba
 from numba import cuda
 
-from .autodiff import Context
-from .tensor import Tensor
-from .tensor_data import (
+from ..autodiff import Context
+from ..tensor.tensor import Tensor
+from ..tensor.data import (
     MAX_DIMS,
     Shape,
     Storage,
@@ -13,7 +13,7 @@ from .tensor_data import (
     index_to_position,
     to_index,
 )
-from .tensor_functions import Function
+from ..tensor.functions import Function
 from .cuda_ops import CudaOps, THREADS_PER_BLOCK
 
 to_index = cuda.jit(device=True)(to_index)

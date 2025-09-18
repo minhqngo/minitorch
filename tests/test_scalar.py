@@ -10,7 +10,7 @@ from minitorch import (
     Scalar,
     central_difference,
     derivative_check,
-    operators,
+    common_operators,
 )
 
 from .strategies import assert_close, small_floats
@@ -29,20 +29,20 @@ small_scalars = scalars(min_value=-100, max_value=100)
 
 @pytest.mark.scalar
 def test_central_diff() -> None:
-    d = central_difference(operators.id, 5, arg=0)
+    d = central_difference(common_operators.id, 5, arg=0)
     assert_close(d, 1.0)
 
-    d = central_difference(operators.add, 5, 10, arg=0)
+    d = central_difference(common_operators.add, 5, 10, arg=0)
     assert_close(d, 1.0)
 
-    d = central_difference(operators.mul, 5, 10, arg=0)
+    d = central_difference(common_operators.mul, 5, 10, arg=0)
     assert_close(d, 10.0)
 
-    d = central_difference(operators.mul, 5, 10, arg=1)
+    d = central_difference(common_operators.mul, 5, 10, arg=1)
     assert_close(d, 5.0)
 
-    d = central_difference(operators.exp, 2, arg=0)
-    assert_close(d, operators.exp(2.0))
+    d = central_difference(common_operators.exp, 2, arg=0)
+    assert_close(d, common_operators.exp(2.0))
 
 
 @given(small_floats, small_floats)
@@ -57,7 +57,7 @@ def test_simple(a: float, b: float) -> None:
 
     # Simple relu
     c = Scalar(a).relu() + Scalar(b).relu()
-    assert_close(c.data, minitorch.common_operators.relu(a) + minitorch.common_operators.relu(b))
+    assert_close(c.data, minitorch.common_common_operators.relu(a) + minitorch.common_common_operators.relu(b))
 
 
 one_arg, two_arg, _ = MathTestVariable._comp_testing()

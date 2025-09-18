@@ -49,11 +49,11 @@ class ScalarFunction:
         raw_vals = []
         scalars = []
         for v in vals:
-            if isinstance(v, minitorch.scalar.Scalar):
+            if isinstance(v, minitorch.Scalar):
                 scalars.append(v)
                 raw_vals.append(v.data)
             else:
-                scalars.append(minitorch.scalar.Scalar(v))
+                scalars.append(minitorch.Scalar(v))
                 raw_vals.append(v)
 
         # Create the context.
@@ -64,8 +64,8 @@ class ScalarFunction:
         assert isinstance(c, float), "Expected return type float got %s" % (type(c))
 
         # Create a new variable from the result with a new history.
-        back = minitorch.scalar.ScalarHistory(cls, ctx, scalars)
-        return minitorch.scalar.Scalar(c, back)
+        back = minitorch.ScalarHistory(cls, ctx, scalars)
+        return minitorch.Scalar(c, back)
 
 
 class Add(ScalarFunction):

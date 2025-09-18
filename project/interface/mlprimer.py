@@ -18,8 +18,8 @@ import minitorch
 
 random.seed(10)
 
-s = minitorch.datasets["Simple"](10)
-spl = minitorch.datasets["Split"](10)
+s = minitorch.dummy_datasets["Simple"](10)
+spl = minitorch.dummy_datasets["Split"](10)
 
 
 def base_model(x1, x2):

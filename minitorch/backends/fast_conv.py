@@ -3,9 +3,9 @@ from typing import Tuple
 import numpy as np
 from numba import njit, prange
 
-from .autodiff import Context
-from .tensor import Tensor
-from .tensor_data import (
+from ..autodiff import Context
+from ..tensor.tensor import Tensor
+from ..tensor.data import (
     MAX_DIMS,
     Index,
     Shape,
@@ -14,7 +14,7 @@ from .tensor_data import (
     index_to_position,
     to_index,
 )
-from .tensor_functions import Function
+from ..tensor.functions import Function
 
 # This code will JIT compile fast versions your tensor_data functions.
 # If you get an error, read the docs for NUMBA as to what is allowed
