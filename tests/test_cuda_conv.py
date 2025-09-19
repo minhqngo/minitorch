@@ -6,9 +6,9 @@ from minitorch import Tensor
 from .tensor_strategies import tensors
 
 try:
-    from minitorch.cuda_conv import conv1d, conv2d
-    from minitorch.cuda_ops import CudaOps
-    from minitorch.tensor_ops import TensorBackend
+    from minitorch.backends.cuda_conv import conv1d, conv2d
+    from minitorch.backends.cuda_ops import CudaOps
+    from minitorch.tensor.operators import TensorBackend
     import numba.cuda
 
     HAS_CUDA = numba.cuda.is_available()
