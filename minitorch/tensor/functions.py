@@ -298,7 +298,7 @@ def rand(
     requires_grad: bool = False,
 ) -> Tensor:
     """
-    Produce a random tensor of size `shape`.
+    Produce a standard random distribution tensor of size `shape`.
 
     Args:
         shape : shape of tensor
@@ -308,7 +308,7 @@ def rand(
     Returns:
         :class:`Tensor` : new tensor
     """
-    vals = [random.random() for _ in range(int(common_operators.prod(shape)))]
+    vals = [np.random.randn() for _ in range(int(common_operators.prod(shape)))]
     tensor = minitorch.Tensor.make(vals, shape, backend=backend)
     tensor.requires_grad_(requires_grad)
     return tensor

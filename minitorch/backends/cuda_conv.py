@@ -33,9 +33,6 @@ def _tensor_conv1d_kernel(
     weight_strides: Strides,
     reverse: bool,
 ) -> None:
-    """
-    CUDA 1D Convolution implementation.
-    """
     i = cuda.blockIdx.x * cuda.blockDim.x + cuda.threadIdx.x
     if i >= out_size:
         return
@@ -155,7 +152,6 @@ def _tensor_conv2d_kernel(
     if i >= out_size:
         return
 
-    # Deconstruct i into batch, out_channel, out_width
     out_index = cuda.local.array(MAX_DIMS, numba.int32)
     to_index(i, out_shape, out_index)
 
