@@ -308,7 +308,7 @@ def rand(
     Returns:
         :class:`Tensor` : new tensor
     """
-    vals = [np.random.randn() for _ in range(int(common_operators.prod(shape)))]
+    vals = [np.random.uniform() for _ in range(int(common_operators.prod(shape)))]
     tensor = minitorch.Tensor.make(vals, shape, backend=backend)
     tensor.requires_grad_(requires_grad)
     return tensor

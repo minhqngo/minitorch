@@ -372,3 +372,8 @@ class Tensor:
         Reset the derivative on this variable.
         """
         self.grad = None
+
+    def uniform_(self, low=0.0, high=1.0):
+        self._tensor._storage[:] = np.random.uniform(
+            low, high, size=len(self._tensor._storage)
+        )

@@ -121,10 +121,10 @@ def logsoftmax(input: Tensor, dim: int) -> Tensor:
     Returns:
          log of softmax tensor
     """
-    exp_input = input.exp()
+    m = max(input, dim)
+    exp_input = (input - m).exp()
     sum_exp = exp_input.sum(dim)
-    log_sum_exp = sum_exp.log()
-    return input - log_sum_exp
+    return input - m - sum_exp.log()
 
 
 def maxpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
@@ -161,5 +161,5 @@ def dropout(input: Tensor, rate: float, ignore: bool = False) -> Tensor:
     if rate == 1.0:
         return input * 0
     p_keep = 1.0 - rate
-    mask = rand(input.shape) > rate
+    mask = tensor([1.0]) - (rand(input.shape) < rate)
     return input * mask * (1.0 / p_keep)
