@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Optional, Sequence, Tuple
+import minitorch
+import numpy as np
 
 
 class Module:
@@ -121,6 +123,14 @@ class Module:
         main_str += ")"
         return main_str
 
+    def save_weights(self, path: str) -> None:
+        weights = {name: p.value.to_numpy() for name, p in self.named_parameters()}
+        np.savez(path, **weights)
+
+    def load_weights(self, path: str) -> None:
+        weights = np.load(path)
+        for name, p in self.named_parameters():
+            p.update(minitorch.tensor(weights[name].tolist()))
 
 class Parameter:
     """

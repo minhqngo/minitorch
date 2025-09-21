@@ -10,13 +10,15 @@ from .testing import MathTest, MathTestVariable  # type: ignore # noqa: F401,F40
 
 from .autodiff import *  # noqa: F401,F403
 from .backends.cuda_ops import *  # noqa: F401,F403
-from .datasets import dummy_datasets  # noqa: F401,F403
+from .datasets import dummy_datasets, mnist  # noqa: F401,F403
 from .backends.fast_conv import *  # noqa: F401,F403
-
 from .backends.fast_ops import *  # noqa: F401,F403
-from .nn.module import *  # noqa: F401,F403
 
+from .nn.module import *  # noqa: F401,F403
 from .nn.nn import *  # noqa: F401,F403
 from .nn.optim import *  # noqa: F401,F403
+from .nn.layers import *
+from .nn.loss import nll_loss, bce_loss, cross_entropy_loss, mse_loss
+from .dataloader import DataLoader
 
-version = "0.4"
+version = "1.0"

@@ -1,5 +1,4 @@
 import math
-from ..tensor import tensor
 
 
 def kaiming_uniform(tensor, fan_in, **kwargs):
