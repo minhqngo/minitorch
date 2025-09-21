@@ -10,10 +10,8 @@ FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
 if numba.cuda.is_available():
     GPUBackend = minitorch.TensorBackend(minitorch.CudaOps)
 
-# Number of classes (10 digits)
 C = 10
 
-# Size of images (height and width)
 H, W = 28, 28
 
 
