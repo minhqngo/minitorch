@@ -3,6 +3,11 @@ from .module import Module, Parameter
 from ..backends import fast_conv, fast_ops
 from . import init
 
+try:
+    from ..backends import cuda_conv
+except ImportError:
+    cuda_conv = None
+
 
 class Linear(Module):
     def __init__(self, in_size, out_size, backend, initializer=init.kaiming_uniform):
@@ -26,9 +31,14 @@ class Conv1d(Module):
         fan_in = in_channels * kernel_width
         initializer(self.weights.value, fan_in)
         self.bias = Parameter(zeros((1, out_channels, 1), backend=backend))
+        self.backend = backend
 
     def forward(self, input):
-        out = fast_conv.conv1d(input, self.weights.value) + self.bias.value
+        # Use CUDA conv if backend is CUDA, otherwise use fast conv
+        if self.backend.cuda and cuda_conv is not None:
+            out = cuda_conv.conv1d(input, self.weights.value) + self.bias.value
+        else:
+            out = fast_conv.conv1d(input, self.weights.value) + self.bias.value
         return out
 
 
@@ -39,7 +49,12 @@ class Conv2d(Module):
         fan_in = in_channels * kh * kw
         initializer(self.weights.value, fan_in)
         self.bias = Parameter(zeros((out_channels, 1, 1), backend=backend))
+        self.backend = backend
 
     def forward(self, input):
-        out = fast_conv.conv2d(input, self.weights.value) + self.bias.value
+        # Use CUDA conv if backend is CUDA, otherwise use fast conv
+        if self.backend.cuda and cuda_conv is not None:
+            out = cuda_conv.conv2d(input, self.weights.value) + self.bias.value
+        else:
+            out = fast_conv.conv2d(input, self.weights.value) + self.bias.value
         return out

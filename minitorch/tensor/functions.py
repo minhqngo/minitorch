@@ -364,9 +364,10 @@ def tensor(
         if isinstance(ls, (list, tuple)):
             return [y for x in ls for y in flatten(x)]
         elif isinstance(ls, np.ndarray):
-            return ls.flatten().tolist()
+            return [float(x) for x in ls.flatten().tolist()]
         else:
-            return [ls]
+            # Convert numpy scalars to Python float
+            return [float(ls)]
 
     cur = flatten(ls)
     shape2 = shape(ls)

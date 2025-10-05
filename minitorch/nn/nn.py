@@ -50,7 +50,7 @@ def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
 max_reduce = FastOps.reduce(common_operators.max, -1e9)
 
 
-def argmax(input: Tensor, dim: int) -> Tensor:
+def argmax_onehot(input: Tensor, dim: int) -> Tensor:
     """
     Compute the argmax as a 1-hot tensor.
 
@@ -60,13 +60,37 @@ def argmax(input: Tensor, dim: int) -> Tensor:
 
 
     Returns:
-        :class:`Tensor` : tensor with 1 on highest cell in dim, 0 otherwise
+        tensor with 1 on highest cell in dim, 0 otherwise
 
     """
-    out = max_reduce(input, dim)
+    # Use the tensor's backend for max reduction
+    out = input.backend.max_reduce(input, dim)
     mask = out == input
     num_max = mask.sum(dim)
     return mask * (1.0 / num_max)
+
+
+def argmax(input: Tensor, dim: int) -> Tensor:
+    """
+    Compute the argmax as indices.
+
+    Args:
+        input : input tensor
+        dim : dimension to apply argmax
+
+    Returns:
+        tensor with indices of highest values along dim
+    """
+    onehot = argmax_onehot(input, dim)
+    shape = list(input.shape)
+    indices_shape = [1] * len(shape)
+    indices_shape[dim] = shape[dim]
+    indices = tensor(
+        list(range(shape[dim])), backend=input.backend
+    ).view(*indices_shape)
+
+    # Multiply one-hot by indices and sum along dim to get argmax
+    return (onehot * indices).sum(dim)
 
 
 class Max(Function):
@@ -75,13 +99,14 @@ class Max(Function):
         "Forward of max should be max reduction"
         dim_val = int(dim.item())
         ctx.save_for_backward(input, dim_val)
-        return max_reduce(input, dim_val)
+        # Use the tensor's backend for max reduction
+        return input.backend.max_reduce(input, dim_val)
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
         "Backward of max should be argmax (see above)"
         input, dim = ctx.saved_values
-        mask = argmax(input, dim)
+        mask = argmax_onehot(input, dim)
         return mask * grad_output, 0.0
 
 

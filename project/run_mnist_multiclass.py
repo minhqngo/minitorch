@@ -1,6 +1,10 @@
 import argparse
 import numba
+import numpy as np
 import sys
+import warnings
+warnings.filterwarnings("ignore")
+from tqdm import tqdm
 
 import minitorch
 from minitorch.datasets import mnist
@@ -13,6 +17,11 @@ if numba.cuda.is_available():
 C = 10
 
 H, W = 28, 28
+
+
+def mnist_transform(image):
+    """Normalize MNIST image from uint8 [0, 255] to float [0, 1]"""
+    return image.astype(np.float64) / 255.0
 
 
 class Network(minitorch.Module):
@@ -49,13 +58,13 @@ class Network(minitorch.Module):
         x = minitorch.avgpool2d(x, (4, 4))
         x = x.view(batch_size, 392)
         x = self.linear1(x).relu()
-        x = minitorch.dropout(x, 0.25, self.mode == "eval")
+        x = minitorch.dropout(x, 0.25, not self.training)
         x = self.linear2(x)
         x = minitorch.logsoftmax(x, dim=1)
         return x
 
 
-def default_log_fn(epoch, total_loss, correct, total, model):
+def default_log_fn(epoch, total_loss, correct, total):
     print(
         f"Epoch {epoch} | loss {total_loss / total:.2f} | valid acc {correct / total:.2f}"
     )
@@ -68,47 +77,43 @@ def train(
     learning_rate,
     max_epochs=50,
     log_fn=default_log_fn,
-    backend=None,
 ):
     optim = minitorch.SGD(model.parameters(), learning_rate)
     for epoch in range(1, max_epochs + 1):
         total_loss = 0.0
         model.train()
-        for X_train, y_train in train_loader:
-            # Forward
+        pbar = tqdm(train_loader, total=len(train_loader), desc=f"Train epoch {epoch}/{max_epochs}")
+        for X_train, y_train in pbar:
+            optim.zero_grad()
             out = model.forward(X_train.view(X_train.shape[0], 1, H, W))
-            
-            # Compute NLL loss
             loss = minitorch.nll_loss(out, y_train)
             loss.backward()
 
             total_loss += loss.item()
-
-            # Update
             optim.step()
+            pbar.set_postfix(loss=loss.item())
 
-        # Evaluate on validation set
         correct = 0
         total = 0
         model.eval()
-        for X_val, y_val in val_loader:            
+        pbar = tqdm(val_loader, total=len(val_loader), desc=f"Val epoch {epoch}/{max_epochs}")
+        for X_val, y_val in pbar:            
             out = model.forward(X_val.view(X_val.shape[0], 1, H, W))
-            
-            # Get predictions
-            y_hat = out.argmax(dim=1)
-
+            y_hat = minitorch.argmax(out, dim=1).squeeze()
             correct += (y_hat == y_val).sum().item()
             total += y_val.shape[0]
+            pbar.set_postfix(acc=correct / total * 100)
 
-        log_fn(epoch, total_loss, correct, total, model)
+        log_fn(epoch, total_loss, correct, total)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--backend", default="cpu", help="backend mode")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training")
-    parser.add_argument("--epochs", type=int, default=5, help="Number of epochs to train for")
+    parser.add_argument("--epochs", type=int, default=1, help="Number of epochs to train for")
     parser.add_argument("--lr", type=float, default=0.01, help="Learning rate")
+    parser.add_argument("--data_dir", type=str, default="/home/minh/datasets/", help="Directory containing MNIST dataset")
     args = parser.parse_args()
 
     if args.backend == "gpu" and numba.cuda.is_available():
@@ -120,30 +125,28 @@ if __name__ == "__main__":
         backend = FastTensorBackend
         print("Using CPU backend")
 
-    # Load MNIST data
-    mnist_train = mnist.MNISTDataset("/home/minh/datasets/", train=True)
-    mnist_val = mnist.MNISTDataset("/home/minh/datasets/", train=False)
+    mnist_train = mnist.MNISTDataset(args.data_dir, train=True)
+    mnist_val = mnist.MNISTDataset(args.data_dir, train=False)
 
-    # Create data loaders
     train_loader = DataLoader(
         mnist_train,
         batch_size=args.batch_size,
         shuffle=True,
-        backend=backend
+        backend=backend,
+        transform=mnist_transform
     )
     val_loader = DataLoader(
         mnist_val,
         batch_size=args.batch_size,
         shuffle=False,
-        backend=backend
+        backend=backend,
+        transform=mnist_transform
     )
 
-    # Initialize model
     model = Network(backend=backend)
 
     print("Starting training...")
-    train(model, train_loader, val_loader, args.lr, max_epochs=args.epochs, backend=backend)
+    train(model, train_loader, val_loader, args.lr, max_epochs=args.epochs)
 
-    # Save model
-    model.save_weights("mnist_model.pt")
-    print("Model saved to mnist_model.pt")
+    model.save_weights("mnist_model.npz")
+    print("Model saved to mnist_model.npz")

@@ -81,6 +81,10 @@ class CudaOps(TensorOps):
                 *out_a.tuple(), out_a.size, *a.tuple(), dim, start
             )
 
+            # If the reduction didn't fully collapse the dimension, do another pass
+            if out_shape[dim] > 1:
+                return ret(out_a, dim)
+
             return out_a
 
         return ret

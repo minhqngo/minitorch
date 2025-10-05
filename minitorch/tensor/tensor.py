@@ -229,6 +229,51 @@ class Tensor:
         "Change the shape of the tensor to a new shape with the same size"
         return View.apply(self, tensor(list(shape)))
 
+    def unsqueeze(self, dim: int) -> Tensor:
+        """
+        Add a dimension of size 1 at the specified position.
+
+        Args:
+            dim: Position where to add the dimension. Can be negative.
+
+        Returns:
+            Tensor with an additional dimension of size 1
+        """
+        if dim < 0:
+            dim = len(self.shape) + dim + 1
+
+        new_shape = list(self.shape)
+        new_shape.insert(dim, 1)
+
+        return self.contiguous().view(*new_shape)
+
+    def squeeze(self, dim: Optional[int] = None) -> Tensor:
+        """
+        Remove dimensions of size 1.
+
+        Args:
+            dim: If specified, only remove dimension at this position if it has size 1.
+                 If None, remove all dimensions of size 1.
+
+        Returns:
+            Tensor with specified dimensions of size 1 removed
+        """
+        if dim is None:
+            new_shape = [s for s in self.shape if s != 1]
+            if not new_shape:
+                new_shape = [1]
+        else:
+            if dim < 0:
+                dim = len(self.shape) + dim
+                
+            new_shape = list(self.shape)
+            if 0 <= dim < len(self.shape) and self.shape[dim] == 1:
+                new_shape.pop(dim)
+            else:
+                new_shape = list(self.shape)
+
+        return self.contiguous().view(*new_shape)
+
     def contiguous(self) -> Tensor:
         "Return a contiguous tensor with the same data"
         return Copy.apply(self)
