@@ -1,2 +1,3 @@
 # minitorch
-Implementation and extension of minitorch, based on [minitorch](https://github.com/minitorch/minitorch)
+
+This is a mini, torch-like deep learning library. The goal is that you can use syntax similar to PyTorch to build deep learning model using this library. This project starting points is the [minitorch exercises](https://github.com/minitorch/minitorch). However, after completing the exercises, I want to turn it into a functional deep learning library that can utilize GPU for model training, and I also want to refactor the code to make it clearer. This project is my attempt to do so.
