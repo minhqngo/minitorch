@@ -25,6 +25,7 @@ from .functions import (
     MatMul,
     Mul,
     Neg,
+    Sqrt,
     Permute,
     ReLU,
     Sigmoid,
@@ -189,6 +190,9 @@ class Tensor:
 
     def is_close(self, y: Tensor) -> Tensor:
         return IsClose.apply(self, y)
+    
+    def sqrt(self) -> Tensor:
+        return Sqrt.apply(self)
 
     def sigmoid(self) -> Tensor:
         return Sigmoid.apply(self)

@@ -8,15 +8,7 @@ from ..scalar.scalar import Scalar
 class Optimizer:
     def __init__(self, parameters: Sequence[Parameter]):
         self.parameters = parameters
-
-
-class SGD(Optimizer):
-    def __init__(self, parameters: Sequence[Parameter], lr: float = 1.0, momentum: float = 0.0):
-        super().__init__(parameters)
-        self.lr = lr
-        self.momentum = momentum
-        self.velocities = {}
-
+        
     def zero_grad(self) -> None:
         for p in self.parameters:
             if p.value is None:
@@ -27,6 +19,14 @@ class SGD(Optimizer):
             if hasattr(p.value, "grad"):
                 if p.value.grad is not None:
                     p.value.grad = None
+
+
+class SGD(Optimizer):
+    def __init__(self, parameters: Sequence[Parameter], lr: float = 1.0, momentum: float = 0.0):
+        super().__init__(parameters)
+        self.lr = lr
+        self.momentum = momentum
+        self.velocities = {}
 
     def step(self) -> None:
         for p in self.parameters:

@@ -7,4 +7,5 @@ pre-commit==2.20.0
 pytest==7.1.2
 pytest-env
 pytest-runner==5.2
+matplotlib==3.10.6
 typing_extensions

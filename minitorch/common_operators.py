@@ -73,6 +73,22 @@ def relu_back(x: float, d: float) -> float:
     return d if x > 0 else 0.
 
 
+def sqrt(x: float) -> float:
+    return math.sqrt(x)
+
+
+def sqrt_back(x: float, d: float) -> float:
+    return d / (2 * math.sqrt(x))
+
+
+def pow(x: float, p: float) -> float:
+    return x ** p
+
+
+def pow_back(x: float, p: float, d: float) -> float:
+    return d * p * (x ** (p - 1))
+
+
 def map(fn: Callable[[float], float]) -> Callable[[Iterable[float]], Iterable[float]]:
     """
     Higher-order map.

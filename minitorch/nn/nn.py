@@ -6,48 +6,96 @@ from ..tensor.tensor import Tensor
 from ..tensor.functions import Function, rand, tensor
 
 
-def tile(input: Tensor, kernel: Tuple[int, int]) -> Tuple[Tensor, int, int]:
+def tile(input: Tensor, kernel: Tuple[int, int], stride: Tuple[int, int] = None) -> Tuple[Tensor, int, int]:
     """
     Reshape an image tensor for 2D pooling
 
     Args:
         input: batch x channel x height x width
         kernel: height x width of pooling
+        stride: height x width stride of pooling (defaults to kernel size)
 
     Returns:
         Tensor of size batch x channel x new_height x new_width x (kernel_height * kernel_width) as well as the new_height and new_width value.
     """
-    input = input.contiguous()
     batch, channel, height, width = input.shape
     kh, kw = kernel
-    assert height % kh == 0
-    assert width % kw == 0
-    new_height, new_width = height // kh, width // kw
-    input = input.view(batch, channel, new_height, kh, new_width, kw)
-    input = input.permute(0, 1, 2, 4, 3, 5)
-    input = input.contiguous()
-    input = input.view(batch, channel, new_height, new_width, kh * kw)
-    return input, new_height, new_width
+
+    if stride is None:
+        stride = kernel
+    sh, sw = stride
+
+    if (sh, sw) == (kh, kw) and height % kh == 0 and width % kw == 0:
+        input = input.contiguous()
+        new_height, new_width = height // kh, width // kw
+        input = input.view(batch, channel, new_height, kh, new_width, kw)
+        input = input.permute(0, 1, 2, 4, 3, 5)
+        input = input.contiguous()
+        input = input.view(batch, channel, new_height, new_width, kh * kw)
+        return input, new_height, new_width
+
+    new_height = (height - kh) // sh + 1
+    new_width = (width - kw) // sw + 1
+
+    output = input.zeros((batch, channel, new_height, new_width, kh * kw))
+
+    for b in range(batch):
+        for c in range(channel):
+            for oh in range(new_height):
+                for ow in range(new_width):
+                    start_h = oh * sh
+                    start_w = ow * sw
+                    idx = 0
+                    for kh_i in range(kh):
+                        for kw_i in range(kw):
+                            ih = start_h + kh_i
+                            iw = start_w + kw_i
+                            if ih < height and iw < width:
+                                output[b, c, oh, ow, idx] = input[b, c, ih, iw]
+                            idx += 1
+
+    return output, new_height, new_width
 
 
-def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
+def avgpool2d(input: Tensor, kernel: Tuple[int, int], stride: Tuple[int, int] = None) -> Tensor:
     """
     Tiled average pooling 2D
 
     Args:
         input : batch x channel x height x width
         kernel : height x width of pooling
+        stride : height x width stride of pooling (defaults to kernel size)
 
     Returns:
         Pooled tensor
     """
+    if input.backend.cuda:
+        from ..backends.cuda_conv import avgpool2d as cuda_avgpool2d
+        return cuda_avgpool2d(input, kernel, stride)
+
     batch, channel, _, _ = input.shape
-    tiled, new_height, new_width = tile(input, kernel)
+    tiled, new_height, new_width = tile(input, kernel, stride)
     out = tiled.sum(4) / (kernel[0] * kernel[1])
     return out.view(batch, channel, new_height, new_width)
 
 
 max_reduce = FastOps.reduce(common_operators.max, -1e9)
+
+
+class Max(Function):
+    @staticmethod
+    def forward(ctx: Context, input: Tensor, dim: Tensor) -> Tensor:
+        "Forward of max should be max reduction"
+        dim_val = int(dim.item())
+        ctx.save_for_backward(input, dim_val)
+        return input.backend.max_reduce(input, dim_val)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
+        "Backward of max should be argmax (see above)"
+        input, dim = ctx.saved_values
+        mask = argmax_onehot(input, dim)
+        return mask * grad_output, 0.0
 
 
 def argmax_onehot(input: Tensor, dim: int) -> Tensor:
@@ -63,7 +111,6 @@ def argmax_onehot(input: Tensor, dim: int) -> Tensor:
         tensor with 1 on highest cell in dim, 0 otherwise
 
     """
-    # Use the tensor's backend for max reduction
     out = input.backend.max_reduce(input, dim)
     mask = out == input
     num_max = mask.sum(dim)
@@ -91,23 +138,6 @@ def argmax(input: Tensor, dim: int) -> Tensor:
 
     # Multiply one-hot by indices and sum along dim to get argmax
     return (onehot * indices).sum(dim)
-
-
-class Max(Function):
-    @staticmethod
-    def forward(ctx: Context, input: Tensor, dim: Tensor) -> Tensor:
-        "Forward of max should be max reduction"
-        dim_val = int(dim.item())
-        ctx.save_for_backward(input, dim_val)
-        # Use the tensor's backend for max reduction
-        return input.backend.max_reduce(input, dim_val)
-
-    @staticmethod
-    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        "Backward of max should be argmax (see above)"
-        input, dim = ctx.saved_values
-        mask = argmax_onehot(input, dim)
-        return mask * grad_output, 0.0
 
 
 def max(input: Tensor, dim: int) -> Tensor:
@@ -152,19 +182,24 @@ def logsoftmax(input: Tensor, dim: int) -> Tensor:
     return input - m - sum_exp.log()
 
 
-def maxpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
+def maxpool2d(input: Tensor, kernel: Tuple[int, int], stride: Tuple[int, int] = None) -> Tensor:
     """
     Tiled max pooling 2D
 
     Args:
         input: batch x channel x height x width
         kernel: height x width of pooling
+        stride: height x width stride of pooling (defaults to kernel size)
 
     Returns:
         Tensor : pooled tensor
     """
+    if input.backend.cuda:
+        from ..backends.cuda_conv import maxpool2d as cuda_maxpool2d
+        return cuda_maxpool2d(input, kernel, stride)
+
     batch, channel, height, width = input.shape
-    tiled, new_height, new_width = tile(input, kernel)
+    tiled, new_height, new_width = tile(input, kernel, stride)
     out = max(tiled, 4)
     return out.view(batch, channel, new_height, new_width)
 
