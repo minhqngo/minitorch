@@ -134,3 +134,4 @@ pyodide
 # IDE and editor specific ignores
 .vscode/
 .idea/
+log/

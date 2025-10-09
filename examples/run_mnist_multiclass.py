@@ -1,10 +1,14 @@
+"""Train a LeNet-5 CNN on MNIST dataset"""
+
 import argparse
 import numba
 import numpy as np
-import matplotlib.pyplot as plt
+import os
+import shutil
 import sys
 import warnings
 warnings.filterwarnings("ignore")
+from tensorboardX import SummaryWriter
 from tqdm import tqdm
 
 import minitorch
@@ -50,7 +54,7 @@ class Network(minitorch.Module):  # LeNet-5
         return x
 
 
-def default_log_fn(epoch, total_loss, correct, total, loss_list):
+def default_log_fn(epoch, total_loss, correct, total):
     print(
         f"Epoch {epoch} | loss {total_loss / total:.2f} | valid acc {correct / total:.2f}"
     )
@@ -60,16 +64,18 @@ def train(
     model,
     train_loader,
     val_loader,
+    logger=None,
     learning_rate=1e-2,
     max_epochs=50,
     log_fn=default_log_fn,
-):
+):  
     optim = minitorch.RMSProp(model.parameters(), learning_rate)
+    best_val_acc = float('-inf')
     for epoch in range(1, max_epochs + 1):
         total_loss = 0.0
         model.train()
-        pbar = tqdm(train_loader, total=len(train_loader), desc=f"Train epoch {epoch}/{max_epochs}")
-        for X_train, y_train in pbar:
+        pbar = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Train epoch {epoch}/{max_epochs}")
+        for i, (X_train, y_train) in pbar:
             optim.zero_grad()
             out = model.forward(X_train.view(X_train.shape[0], 1, H, W))
             loss = minitorch.nll_loss(out, y_train)
@@ -78,6 +84,9 @@ def train(
             total_loss += loss.item()
             optim.step()
             pbar.set_postfix(loss=loss.item())
+            
+            if logger:
+                logger.add_scalar('Loss/train', loss.item(), (epoch - 1) * len(train_loader) + (i + 1))
 
         correct = 0
         total = 0
@@ -89,7 +98,13 @@ def train(
             correct += (y_hat == y_val).sum().item()
             total += y_val.shape[0]
             pbar.set_postfix(acc=correct / total * 100)
-
+            
+        if best_val_acc < correct / total:
+            best_val_acc = correct / total
+            model.save_weights("mnist_model.npz")
+            print("Model saved to mnist_model.npz")
+                
+        logger.add_scalar('Accuracy/val', correct / total * 100, epoch)
         log_fn(epoch, total_loss, correct, total)
 
 
@@ -100,6 +115,7 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int, default=1, help="Number of epochs to train for")
     parser.add_argument("--lr", type=float, default=0.01, help="Learning rate")
     parser.add_argument("--data_dir", type=str, default="/home/minh/datasets/", help="Directory containing MNIST dataset")
+    parser.add_argument("--log_dir", type=str, default=None, help="Directory to log training parameters")
     args = parser.parse_args()
 
     if args.backend == "gpu" and numba.cuda.is_available():
@@ -130,9 +146,13 @@ if __name__ == "__main__":
     )
 
     model = Network(backend=backend)
+    
+    logger = None
+    if args.log_dir:
+        if os.path.exists(args.log_dir):
+            shutil.rmtree(args.log_dir)
+        os.makedirs(args.log_dir)
+        logger = SummaryWriter(args.log_dir)
 
     print("Starting training...")
-    train(model, train_loader, val_loader, args.lr, max_epochs=args.epochs)
-
-    model.save_weights("mnist_model.npz")
-    print("Model saved to mnist_model.npz")
+    train(model, train_loader, val_loader, logger, args.lr, max_epochs=args.epochs)
