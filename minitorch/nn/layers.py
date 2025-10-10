@@ -1,8 +1,7 @@
 from ..tensor.functions import rand, zeros
 from .module import Module, Parameter
-from ..backends import fast_conv, fast_ops
+from ..backends import fast_conv
 from . import init
-from ..tensor.tensor import Tensor
 
 try:
     from ..backends import cuda_conv
@@ -37,24 +36,19 @@ class Conv1d(Module):
         self.kernel_width = kernel_width
 
     def forward(self, input):
-        # Perform strided convolution manually if stride != 1
         batch, in_channels, w = input.shape
         kw = self.kernel_width
         stride = self.stride
         out_channels = self.weights.value.shape[0]
 
-        # Calculate output width with stride
         out_w = (w - kw) // stride + 1
 
-        # Create output tensor
         output = input.zeros((batch, out_channels, out_w))
 
-        # Perform convolution with stride
         for b in range(batch):
             for oc in range(out_channels):
                 for ow in range(out_w):
                     start_w = ow * stride
-                    # Compute convolution for this window
                     total = 0.0
                     for ic in range(in_channels):
                         for k in range(kw):
@@ -83,7 +77,6 @@ class Conv2d(Module):
         self.backend = backend
 
     def forward(self, input):
-        # Use CUDA conv if backend is CUDA, otherwise use fast conv
         if self.backend.cuda and cuda_conv is not None:
             out = cuda_conv.conv2d(input, self.weights.value, self.stride) + self.bias.value
         else:

@@ -1,4 +1,3 @@
-from ..tensor import tensor
 from .nn import logsoftmax
 
 
