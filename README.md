@@ -157,3 +157,7 @@ See `examples/run_mnist_multiclass.py` for a complete example of training a LeNe
 ```bash
 python examples/run_mnist_multiclass.py --backend gpu --batch_size 32 --epochs 10 --lr 0.01
 ```
+
+## TODO
+- Implement vanilla RNN layer
+- Implement Adam optimizer
