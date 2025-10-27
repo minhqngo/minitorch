@@ -36,28 +36,11 @@ class Conv1d(Module):
         self.kernel_width = kernel_width
 
     def forward(self, input):
-        batch, in_channels, w = input.shape
-        kw = self.kernel_width
-        stride = self.stride
-        out_channels = self.weights.value.shape[0]
-
-        out_w = (w - kw) // stride + 1
-
-        output = input.zeros((batch, out_channels, out_w))
-
-        for b in range(batch):
-            for oc in range(out_channels):
-                for ow in range(out_w):
-                    start_w = ow * stride
-                    total = 0.0
-                    for ic in range(in_channels):
-                        for k in range(kw):
-                            iw = start_w + k
-                            if iw < w:
-                                total += input[b, ic, iw] * self.weights.value[oc, ic, k]
-                    output[b, oc, ow] = total + self.bias.value[0, oc, 0]
-
-        return output
+        if self.backend.cuda and cuda_conv is not None:
+            out = cuda_conv.conv1d(input, self.weights.value, self.stride) + self.bias.value
+        else:
+            out = fast_conv.conv1d(input, self.weights.value, self.stride) + self.bias.value
+        return out
 
 
 class Conv2d(Module):
