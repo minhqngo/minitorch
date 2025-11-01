@@ -114,3 +114,94 @@ def test_shape_broadcast() -> None:
 @given(tensor_data())
 def test_string(tensor_data: TensorData) -> None:
     tensor_data.to_string()
+
+
+@pytest.mark.tensor_data
+def test_slice_basic_1d() -> None:
+    data = list(range(10))
+    tensor_data = minitorch.TensorData(data, (10,))
+
+    sliced = tensor_data.slice(slice(2, 5))
+    assert sliced.shape == (3,), f"Expected shape (3,), got {sliced.shape}"
+    assert sliced.get((0,)) == 2.0
+    assert sliced.get((1,)) == 3.0
+    assert sliced.get((2,)) == 4.0
+
+
+@pytest.mark.tensor_data
+def test_slice_basic_2d() -> None:
+    "Test basic slicing on 2D tensor"
+    data = list(range(12))
+    tensor_data = minitorch.TensorData(data, (3, 4))
+
+    sliced = tensor_data.slice((slice(1, 3), slice(None)))
+    assert sliced.shape == (2, 4), f"Expected shape (2, 4), got {sliced.shape}"
+
+    sliced = tensor_data.slice((slice(None), slice(1, 3)))
+    assert sliced.shape == (3, 2), f"Expected shape (3, 2), got {sliced.shape}"
+
+
+@pytest.mark.tensor_data
+def test_slice_with_step() -> None:
+    data = list(range(10))
+    tensor_data = minitorch.TensorData(data, (10,))
+
+    sliced = tensor_data.slice(slice(0, 10, 2))
+    assert sliced.shape == (5,), f"Expected shape (5,), got {sliced.shape}"
+    assert sliced.get((0,)) == 0.0
+    assert sliced.get((1,)) == 2.0
+
+    sliced = tensor_data.slice(slice(0, 10, 3))
+    assert sliced.shape == (4,), f"Expected shape (4,), got {sliced.shape}"
+
+
+@pytest.mark.tensor_data
+def test_slice_negative_indices() -> None:
+    "Test slicing with negative indices"
+    data = list(range(10))
+    tensor_data = minitorch.TensorData(data, (10,))
+
+    sliced = tensor_data.slice(slice(-3, None))
+    assert sliced.shape == (3,), f"Expected shape (3,), got {sliced.shape}"
+
+    sliced = tensor_data.slice(slice(None, -2))
+    assert sliced.shape == (8,), f"Expected shape (8,), got {sliced.shape}"
+
+    sliced = tensor_data.slice(slice(-5, -2))
+    assert sliced.shape == (3,), f"Expected shape (3,), got {sliced.shape}"
+
+
+@pytest.mark.tensor_data
+def test_slice_mixed_indexing() -> None:
+    data = list(range(24))
+    tensor_data = minitorch.TensorData(data, (4, 3, 2))
+
+    sliced = tensor_data.slice((1, slice(None), slice(None)))
+    assert sliced.shape == (3, 2), f"Expected shape (3, 2), got {sliced.shape}"
+
+    sliced = tensor_data.slice((slice(None), 1, slice(None)))
+    assert sliced.shape == (4, 2), f"Expected shape (4, 2), got {sliced.shape}"
+
+    sliced = tensor_data.slice((slice(None), slice(None), 1))
+    assert sliced.shape == (4, 3), f"Expected shape (4, 3), got {sliced.shape}"
+
+
+@pytest.mark.tensor_data
+def test_slice_full_slice() -> None:
+    data = list(range(12))
+    tensor_data = minitorch.TensorData(data, (3, 4))
+
+    sliced = tensor_data.slice((slice(None), slice(None)))
+    assert sliced.shape == (3, 4), f"Expected shape (3, 4), got {sliced.shape}"
+
+
+@pytest.mark.tensor_data
+def test_slice_empty() -> None:
+    data = list(range(10))
+    tensor_data = minitorch.TensorData(data, (10,))
+
+    sliced = tensor_data.slice(slice(5, 5))
+    assert sliced.shape == (0,), f"Expected shape (0,), got {sliced.shape}"
+
+    sliced = tensor_data.slice(slice(7, 5))
+    assert sliced.shape == (0,), f"Expected shape (0,), got {sliced.shape}"

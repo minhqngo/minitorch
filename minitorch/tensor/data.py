@@ -143,6 +143,41 @@ def strides_from_shape(shape: UserShape) -> UserStrides:
     return tuple(reversed(layout[:-1]))
 
 
+def normalize_slice(s: slice, dim_size: int) -> Tuple[int, int, int]:
+    """
+    Normalize a slice object to (start, stop, step) with proper bounds.
+
+    Args:
+        s: slice object
+        dim_size: size of the dimension being sliced
+
+    Returns:
+        (start, stop, step) tuple with normalized values
+    """
+    step = s.step if s.step is not None else 1
+    if step == 0:
+        raise IndexingError("slice step cannot be zero")
+
+    if step < 0:
+        start = s.start if s.start is not None else dim_size - 1
+        stop = s.stop if s.stop is not None else -dim_size - 1
+    else:
+        start = s.start if s.start is not None else 0
+        stop = s.stop if s.stop is not None else dim_size
+
+    if start < 0:
+        start = max(0, dim_size + start)
+    else:
+        start = min(start, dim_size)
+
+    if stop < 0:
+        stop = max(-1 if step < 0 else 0, dim_size + stop)
+    else:
+        stop = min(stop, dim_size)
+
+    return start, stop, step
+
+
 class TensorData:
     _storage: Storage
     _strides: Strides
@@ -175,7 +210,8 @@ class TensorData:
         self.dims = len(strides)
         self.size = int(prod(shape))
         self.shape = shape
-        assert len(self._storage) == self.size
+        # Note: Storage can be larger than size for non-contiguous views
+        # assert len(self._storage) == self.size
 
     def to_cuda_(self) -> None:  # pragma: no cover
         if not numba.cuda.is_cuda_array(self._storage):
@@ -260,6 +296,55 @@ class TensorData:
         new_strides = tuple(self.strides[i] for i in order)
         return TensorData(self._storage, new_shape, new_strides)
 
+    def slice(self, key: Union[int, slice, Sequence[Union[int, slice]]]) -> TensorData:
+        """
+        Create a sliced view of the tensor.
+
+        Args:
+            key: int, slice, or tuple of ints/slices for indexing
+
+        Returns:
+            New TensorData representing the sliced view
+        """
+        if isinstance(key, (int, slice)):
+            key = (key,)
+
+        if len(key) > len(self.shape):
+            raise IndexingError(f"Too many indices {len(key)} for tensor of dimension {len(self.shape)}")
+
+        key = tuple(key) + (slice(None),) * (len(self.shape) - len(key))
+
+        new_shape = []
+        new_strides = []
+        offset = 0
+
+        for dim, (k, dim_size, stride) in enumerate(zip(key, self.shape, self.strides)):
+            if isinstance(k, int):
+                idx = k
+                if idx < 0:
+                    idx = dim_size + idx
+                if idx < 0 or idx >= dim_size:
+                    raise IndexingError(f"Index {k} out of range for dimension {dim} with size {dim_size}")
+                offset += idx * stride
+            elif isinstance(k, slice):
+                start, stop, step = normalize_slice(k, dim_size)
+                if step > 0:
+                    size = max(0, (stop - start + step - 1) // step)
+                else:
+                    size = max(0, (stop - start + step + 1) // step)
+
+                new_shape.append(size)
+                new_strides.append(stride * step)
+                offset += start * stride
+            else:
+                raise IndexingError(f"Unsupported index type: {type(k)}")
+
+        if len(new_shape) == 0:
+            scalar_val = self._storage[offset]
+            return TensorData([scalar_val], (1,), (1,))
+
+        return _make_tensor_data_view(self._storage, tuple(new_shape), tuple(new_strides), offset)
+
     def to_string(self) -> str:
         s = ""
         for index in self.indices():
@@ -283,3 +368,30 @@ class TensorData:
             else:
                 s += " "
         return s
+
+
+def _make_tensor_data_view(
+    storage: Storage, shape: UserShape, strides: UserStrides, offset: int
+) -> TensorData:
+    """
+    Create a TensorData view with an offset into the storage.
+
+    Args:
+        storage: The underlying storage array
+        shape: Shape of the view
+        strides: Strides for the view
+        offset: Offset into the storage where the view starts
+
+    Returns:
+        TensorData representing the view
+    """
+    if len(shape) == 0 or prod(shape) == 0:
+        # Empty tensor
+        return TensorData([], shape, strides)
+
+    if offset > 0:
+        view_storage = storage[offset:]
+    else:
+        view_storage = storage
+
+    return TensorData(view_storage, shape, strides)

@@ -285,9 +285,27 @@ class Tensor:
     def __repr__(self) -> str:
         return self._tensor.to_string()
 
-    def __getitem__(self, key: Union[int, UserIndex]) -> float:
-        key2 = (key,) if isinstance(key, int) else key
-        return self._tensor.get(key2)
+    def __getitem__(self, key: Union[int, slice, UserIndex]) -> Union[float, Tensor]:
+        if isinstance(key, slice):
+            sliced_data = self._tensor.slice(key)
+            return Tensor(sliced_data, backend=self.backend)
+        elif isinstance(key, tuple):
+            has_slice = any(isinstance(k, slice) for k in key)
+            if has_slice:
+                sliced_data = self._tensor.slice(key)
+                if sliced_data.shape == (1,) and sliced_data.size == 1:
+                    return float(sliced_data._storage[0])
+                return Tensor(sliced_data, backend=self.backend)
+            else:
+                return self._tensor.get(key)
+        elif isinstance(key, int):
+            if len(self.shape) == 1:
+                return self._tensor.get((key,))
+            else:
+                sliced_data = self._tensor.slice(key)
+                return Tensor(sliced_data, backend=self.backend)
+        else:
+            raise TypeError(f"Unsupported index type: {type(key)}")
 
     def __setitem__(self, key: Union[int, UserIndex], val: float) -> None:
         key2 = (key,) if isinstance(key, int) else key

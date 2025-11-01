@@ -361,3 +361,120 @@ def test_bmm(backend: str, data: DataObject) -> None:
         .view(D, A, C)
     )
     assert_close_tensor(c, c2)
+
+
+@pytest.mark.fast_ops
+def test_tensor_slice_1d() -> None:
+    t = minitorch.tensor([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], backend=FastTensorBackend)
+
+    s = t[2:5]
+    assert isinstance(s, Tensor)
+    assert s.shape == (3,)
+    assert s[0] == 2.0
+    assert s[1] == 3.0
+    assert s[2] == 4.0
+
+    s = t[-3:]
+    assert s.shape == (3,)
+    assert s[0] == 7.0
+    assert s[1] == 8.0
+    assert s[2] == 9.0
+
+    s = t[::2]
+    assert s.shape == (5,)
+    assert s[0] == 0.0
+    assert s[1] == 2.0
+    assert s[2] == 4.0
+
+
+@pytest.mark.fast_ops
+def test_tensor_slice_2d() -> None:
+    data = [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11]]
+    t = minitorch.tensor(data, backend=FastTensorBackend)
+
+    s = t[1:3]
+    assert isinstance(s, Tensor)
+    assert s.shape == (2, 4)
+    assert s[0, 0] == 4.0
+    assert s[1, 0] == 8.0
+
+    s = t[:, 1:3]
+    assert s.shape == (3, 2)
+    assert s[0, 0] == 1.0
+    assert s[0, 1] == 2.0
+
+    s = t[1:3, 1:3]
+    assert s.shape == (2, 2)
+    assert s[0, 0] == 5.0
+    assert s[0, 1] == 6.0
+    assert s[1, 0] == 9.0
+    assert s[1, 1] == 10.0
+
+
+@pytest.mark.fast_ops
+def test_tensor_slice_mixed_indexing() -> None:
+    data = [[[i + j + k for k in range(2)] for j in range(3)] for i in range(4)]
+    t = minitorch.tensor(data, backend=FastTensorBackend)
+
+    s = t[1, :, :]
+    assert isinstance(s, Tensor)
+    assert s.shape == (3, 2)
+
+    s = t[:, 1, :]
+    assert s.shape == (4, 2)
+
+    s = t[:, :, 0]
+    assert s.shape == (4, 3)
+
+    val = t[1, 1, 1]
+    assert isinstance(val, float)
+
+
+@pytest.mark.fast_ops
+def test_tensor_slice_view_sharing() -> None:
+    t = minitorch.tensor([0, 1, 2, 3, 4], backend=FastTensorBackend)
+    s = t[1:4]
+
+    s._tensor.set((0,), 99.0)
+
+    assert t[1] == 99.0
+
+
+@pytest.mark.fast_ops
+def test_tensor_slice_empty() -> None:
+    t = minitorch.tensor([0, 1, 2, 3, 4], backend=FastTensorBackend)
+
+    # Empty slice
+    s = t[2:2]
+    assert isinstance(s, Tensor)
+    assert s.shape == (0,)
+    assert s.size == 0
+
+
+@pytest.mark.fast_ops
+def test_tensor_slice_full() -> None:
+    t = minitorch.tensor([[1, 2], [3, 4]], backend=FastTensorBackend)
+
+    s = t[:, :]
+    assert isinstance(s, Tensor)
+    assert s.shape == (2, 2)
+    assert s[0, 0] == 1.0
+    assert s[1, 1] == 4.0
+
+
+@pytest.mark.fast_ops
+def test_tensor_slice_backward_compatible() -> None:
+    t = minitorch.tensor([[1, 2, 3], [4, 5, 6]], backend=FastTensorBackend)
+
+    s = t[1]
+    assert isinstance(s, Tensor)
+    assert s.shape == (3,)
+
+    t1d = minitorch.tensor([1, 2, 3], backend=FastTensorBackend)
+    val = t1d[1]
+    assert isinstance(val, float)
+    assert val == 2.0
+
+    val = t[1, 2]
+    assert isinstance(val, float)
+    assert val == 6.0
