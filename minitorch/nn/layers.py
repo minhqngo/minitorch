@@ -1,4 +1,4 @@
-from ..tensor.functions import rand, zeros
+from ..tensor.functions import rand, tensor, zeros
 from .module import Module, Parameter
 from ..backends import fast_conv
 from . import init
@@ -9,23 +9,7 @@ except ImportError:
     cuda_conv = None
 
 
-__all__ = ['Linear', 'Conv1d', 'Conv2d', 'RNN', 'tanh']
-
-
-def tanh(x):
-    """
-    Hyperbolic tangent activation function.
-
-    tanh(x) = (exp(2x) - 1) / (exp(2x) + 1) = 2*sigmoid(2x) - 1
-
-    Args:
-        x: Input tensor
-
-    Returns:
-        Tensor with tanh applied element-wise
-    """
-    # Using the sigmoid-based formula for numerical stability
-    return 2.0 * (2.0 * x).sigmoid() - 1.0
+__all__ = ['Linear', 'Conv1d', 'Conv2d', 'RNN']
 
 
 class Linear(Module):
@@ -90,15 +74,12 @@ class RNN(Module):
     def __init__(self, input_size, hidden_size, backend, initializer=init.glorot_uniform):
         super().__init__()
 
-        # Input-to-hidden weights
         self.W_ih = Parameter(rand((input_size, hidden_size), backend=backend))
         initializer(self.W_ih.value, input_size, hidden_size)
 
-        # Hidden-to-hidden weights
         self.W_hh = Parameter(rand((hidden_size, hidden_size), backend=backend))
         initializer(self.W_hh.value, hidden_size, hidden_size)
 
-        # Bias
         self.bias = Parameter(zeros((hidden_size,), backend=backend))
 
         self.hidden_size = hidden_size
@@ -116,11 +97,11 @@ class RNN(Module):
 
         for t in range(seq_len):
             x_t = x[:, t, :]
-            h = tanh(
+            h = (
                 x_t.view(batch_size, self.input_size) @ self.W_ih.value.view(self.input_size, self.hidden_size)
                 + h.view(batch_size, self.hidden_size) @ self.W_hh.value.view(self.hidden_size, self.hidden_size)
                 + self.bias.value.view(1, self.hidden_size)
-            )
+            ).tanh()
             outputs.append(h)
         
         output_tensors = []
@@ -136,7 +117,6 @@ class RNN(Module):
                     for h_idx in range(self.hidden_size):
                         output_list.append(outputs[t][b, h_idx])
 
-            from ..tensor.functions import tensor
             output = tensor(output_list, backend=self.backend).view(batch_size, seq_len, self.hidden_size)
 
         return output, h

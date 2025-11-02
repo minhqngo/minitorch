@@ -30,6 +30,7 @@ from .functions import (
     ReLU,
     Sigmoid,
     Sum,
+    Tanh,
     View,
     tensor,
 )
@@ -196,6 +197,9 @@ class Tensor:
 
     def sigmoid(self) -> Tensor:
         return Sigmoid.apply(self)
+
+    def tanh(self) -> Tensor:
+        return Tanh.apply(self)
 
     def relu(self) -> Tensor:
         return ReLU.apply(self)

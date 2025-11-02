@@ -46,6 +46,15 @@ def relu(x: float) -> float:
     return (x > 0) * x
 
 
+def tanh(x: float) -> float:  # tanh(x) = 2*sigmoid(2x) - 1
+    return 2.0 * (1.0 / (1.0 + math.exp(-2.0 * x))) - 1.0
+
+
+def tanh_back(x: float, d: float) -> float:  # d/dx tanh(x) = 1 - tanh^2(x)
+    t = 2.0 * (1.0 / (1.0 + math.exp(-2.0 * x))) - 1.0
+    return d * (1.0 - t * t)
+
+
 EPS = 1e-6
 
 

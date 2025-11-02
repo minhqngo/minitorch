@@ -159,5 +159,5 @@ python examples/run_mnist_multiclass.py --backend gpu --batch_size 32 --epochs 1
 ```
 
 ## TODO
-- Implement vanilla RNN layer
+- ~~Implement vanilla RNN layer~~
 - Implement Adam optimizer
