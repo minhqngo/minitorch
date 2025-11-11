@@ -81,10 +81,10 @@ class UCISentimentDataset:
         max_length = 0
         for sent in self.sentences:
             max_length = max(max_length, len(sent))
-        
+
         unks = set()
-        unk_emb = [0.1 * (random.random() - 0.5) for i in range(max_length)]
-        
+        unk_emb = [0.1 * (random.random() - 0.5) for i in range(self.emb_lookup.d_emb)]
+
         self.samples = encode_sentences(self.sentences, max_length, self.emb_lookup, unk_emb, unks)
 
     def __len__(self):

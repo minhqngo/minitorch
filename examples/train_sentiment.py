@@ -67,6 +67,7 @@ def train(
             optim.zero_grad()
             out = model.forward(X_train)
             prob = (out * y_train) + (out - 1.0) * (y_train - 1.0)
+            prob = prob + 1e-10  # for numerical stability
             loss = -(prob.log() / y_train.shape[0]).sum().view(1)
             loss.backward()
 
@@ -81,9 +82,9 @@ def train(
         total = 0
         model.eval()
         pbar = tqdm(val_loader, total=len(val_loader), desc=f"Val epoch {epoch}/{max_epochs}")
-        for X_val, y_val in pbar:            
+        for X_val, y_val in pbar:
             out = model.forward(X_val)
-            preds = (out > 0.5).astype(y_val.dtype)
+            preds = (out > 0.5)
             correct += (preds == y_val).sum().item()
             total += y_val.shape[0]
             pbar.set_postfix(acc=correct / total * 100)
