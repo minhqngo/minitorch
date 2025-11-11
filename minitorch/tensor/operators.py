@@ -45,7 +45,7 @@ class TensorOps:
 
     @staticmethod
     def matrix_multiply(a: Tensor, b: Tensor) -> Tensor:
-        raise NotImplementedError("Not implemented in this assignment")
+        raise NotImplementedError("matrix_multiply not implemented")
 
     cuda = False
 
@@ -227,7 +227,7 @@ class SimpleOps(TensorOps):
 
     @staticmethod
     def matrix_multiply(a: "Tensor", b: "Tensor") -> "Tensor":
-        raise NotImplementedError("Not implemented in this assignment")
+        raise NotImplementedError("matrix_multiply not implemented")
 
     is_cuda = False
 

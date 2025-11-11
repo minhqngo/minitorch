@@ -1,6 +1,7 @@
-"""Train a LeNet-5 CNN on MNIST dataset"""
+"""Train a 1D CNN on sentiment classification data"""
 
 import argparse
+import embeddings
 import numba
 import numpy as np
 import os
@@ -10,68 +11,37 @@ import warnings
 warnings.filterwarnings("ignore")
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
+from sklearn.model_selection import train_test_split
 
 import minitorch
-from minitorch.datasets import mnist
+from minitorch.datasets import uci_sentiment
 from minitorch.dataloader import DataLoader
 
 FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
 if numba.cuda.is_available():
     GPUBackend = minitorch.TensorBackend(minitorch.CudaOps)
-
-H, W = 28, 28
-C = 10
-
-
-def preprocess(image):
-    return image.astype(np.float64) / 255.0
-
-
-class LeNetOriginal(minitorch.Module):  # LeNet-5
-    def __init__(self, backend=FastTensorBackend):
+    
+    
+class CNNSentiment(minitorch.Module):
+    def __init__(self, feature_map_size=100, embedding_size=50, filter_sizes=[3, 4, 5], backend=FastTensorBackend):
         super().__init__()
-        self.conv1 = minitorch.Conv2d(in_channels=1, out_channels=6, kernel=(5, 5), stride=1, backend=backend)
-        self.conv2 = minitorch.Conv2d(in_channels=6, out_channels=16, kernel=(5, 5), stride=1, backend=backend)
-
-        self.fc1 = minitorch.Linear(16 * 4 * 4, 120, backend=backend)
-        self.fc2 = minitorch.Linear(120, 84, backend=backend)
-        self.fc3 = minitorch.Linear(84, C, backend=backend)
-
-    def forward(self, x):
-        batch_size = x.shape[0]
-        x = self.conv1(x).sigmoid()
-        x = minitorch.avgpool2d(x, kernel=(2, 2), stride=(2, 2))
-        x = self.conv2(x).sigmoid()
-        x = minitorch.avgpool2d(x, kernel=(2, 2), stride=(2, 2))
-        x = x.view(batch_size, 16 * 4 * 4)
-        x = self.fc1(x).sigmoid()
+        self.feature_map_size = feature_map_size
+        self.conv1 = minitorch.Conv1d(embedding_size, feature_map_size, filter_sizes[0], backend=backend)
+        self.conv2 = minitorch.Conv1d(embedding_size, feature_map_size, filter_sizes[1], backend=backend)
+        self.conv3 = minitorch.Conv1d(embedding_size, feature_map_size, filter_sizes[2], backend=backend)
+        self.fc = minitorch.Linear(feature_map_size, 1, backend=backend)
+        
+    def forward(self, embeddings):
+        x = embeddings.permute(0, 2, 1)
+        x1 = self.conv1(x).relu()
+        x2 = self.conv2(x).relu()
+        x3 = self.conv3(x).relu()
+        x = minitorch.max(x1, 2) + minitorch.max(x2, 2) + minitorch.max(x3, 2)
+        x = self.fc(x.view(x.shape[0], self.feature_map_size))
         x = minitorch.dropout(x, 0.2, not self.training)
-        x = self.fc2(x).sigmoid()
-        x = minitorch.dropout(x, 0.2, not self.training)
-        x = self.fc3(x)
-        x = minitorch.logsoftmax(x, dim=1)
-        return x
-
-
-class ModernLeNet(minitorch.Module):
-    def __init__(self, backend=FastTensorBackend):
-        super().__init__()
-        self.conv1 = minitorch.Conv2d(in_channels=1, out_channels=8, kernel=(3, 3), stride=1, backend=backend)
-        self.conv2 = minitorch.Conv2d(in_channels=8, out_channels=16, kernel=(3, 3), stride=1, backend=backend)
-        self.fc = minitorch.Linear(16 * 5 * 5, C, backend=backend)
-
-    def forward(self, x):
-        batch_size = x.shape[0]
-        x = self.conv1(x).relu()
-        x = minitorch.maxpool2d(x, kernel=(2, 2), stride=(2, 2))
-        x = self.conv2(x).relu()
-        x = minitorch.maxpool2d(x, kernel=(2, 2), stride=(2, 2))
-        x = x.view(batch_size, 16 * 5 * 5)
-        x = self.fc(x)
-        x = minitorch.logsoftmax(x, dim=1)
-        return x
-
-
+        return x.sigmoid().view(x.shape[0])
+    
+    
 def default_log_fn(epoch, total_loss, correct, total):
     print(
         f"Epoch {epoch} | loss {total_loss / total:.2f} | valid acc {correct / total:.2f}"
@@ -95,8 +65,9 @@ def train(
         pbar = tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Train epoch {epoch}/{max_epochs}")
         for i, (X_train, y_train) in pbar:
             optim.zero_grad()
-            out = model.forward(X_train.view(X_train.shape[0], 1, H, W))
-            loss = minitorch.nll_loss(out, y_train)
+            out = model.forward(X_train)
+            prob = (out * y_train) + (out - 1.0) * (y_train - 1.0)
+            loss = -(prob.log() / y_train.shape[0]).sum().view(1)
             loss.backward()
 
             total_loss += loss.item()
@@ -111,21 +82,21 @@ def train(
         model.eval()
         pbar = tqdm(val_loader, total=len(val_loader), desc=f"Val epoch {epoch}/{max_epochs}")
         for X_val, y_val in pbar:            
-            out = model.forward(X_val.view(X_val.shape[0], 1, H, W))
-            y_hat = minitorch.argmax(out, dim=1).squeeze()
-            correct += (y_hat == y_val).sum().item()
+            out = model.forward(X_val)
+            preds = (out > 0.5).astype(y_val.dtype)
+            correct += (preds == y_val).sum().item()
             total += y_val.shape[0]
             pbar.set_postfix(acc=correct / total * 100)
             
         if best_val_acc < correct / total:
             best_val_acc = correct / total
-            model.save_weights("mnist_model.npz")
+            model.save_weights("sentiment_model.npz")
             print("Model saved to mnist_model.npz")
                 
         logger.add_scalar('Accuracy/val', correct / total * 100, epoch)
         log_fn(epoch, total_loss, correct, total)
-
-
+        
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--backend", default="cpu", help="backend mode")
@@ -144,26 +115,24 @@ if __name__ == "__main__":
             print("CUDA backend not available, using CPU instead.", file=sys.stderr)
         backend = FastTensorBackend
         print("Using CPU backend")
-
-    mnist_train = mnist.MNISTDataset(args.data_dir, train=True)
-    mnist_val = mnist.MNISTDataset(args.data_dir, train=False)
-
+        
+    emb_lookup = embeddings.GloveEmbedding("wikipedia_gigaword", d_emb=50, show_progress=True)
+    ds = uci_sentiment.UCISentimentDataset(root=args.data_dir, emb_lookup=emb_lookup)
+    sentiment_train, sentiment_val = train_test_split(ds, test_size=0.2, random_state=42)
     train_loader = DataLoader(
-        mnist_train,
+        sentiment_train,
         batch_size=args.batch_size,
         shuffle=True,
-        backend=backend,
-        transform=preprocess
+        backend=backend
     )
     val_loader = DataLoader(
-        mnist_val,
+        sentiment_val,
         batch_size=args.batch_size,
         shuffle=False,
-        backend=backend,
-        transform=preprocess
+        backend=backend
     )
-
-    model = ModernLeNet(backend=backend)
+    
+    model = CNNSentiment(feature_map_size=100, embedding_size=50, filter_sizes=[3, 4, 5], backend=backend)
     
     logger = None
     if args.log_dir:
