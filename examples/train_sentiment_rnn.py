@@ -1,5 +1,3 @@
-"""Train a 1D CNN on sentiment classification data"""
-
 import argparse
 import embeddings
 import numba
@@ -20,28 +18,23 @@ from minitorch.dataloader import DataLoader
 FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
 if numba.cuda.is_available():
     GPUBackend = minitorch.TensorBackend(minitorch.CudaOps)
-    
-    
-class CNNSentiment(minitorch.Module):
-    def __init__(self, feature_map_size=100, embedding_size=50, filter_sizes=[3, 4, 5], backend=FastTensorBackend):
+
+
+class RNNSentiment(minitorch.Module):
+    def __init__(self, embedding_size=50, hidden_size=100, backend=FastTensorBackend):
         super().__init__()
-        self.feature_map_size = feature_map_size
-        self.conv1 = minitorch.Conv1d(embedding_size, feature_map_size, filter_sizes[0], backend=backend)
-        self.conv2 = minitorch.Conv1d(embedding_size, feature_map_size, filter_sizes[1], backend=backend)
-        self.conv3 = minitorch.Conv1d(embedding_size, feature_map_size, filter_sizes[2], backend=backend)
-        self.fc = minitorch.Linear(feature_map_size, 1, backend=backend)
-        
+        self.hidden_size = hidden_size
+        self.rnn = minitorch.RNN(embedding_size, hidden_size, backend=backend)
+        self.fc = minitorch.Linear(hidden_size, 1, backend=backend)
+
     def forward(self, embeddings):
-        x = embeddings.permute(0, 2, 1)
-        x1 = self.conv1(x).relu()
-        x2 = self.conv2(x).relu()
-        x3 = self.conv3(x).relu()
-        x = minitorch.max(x1, 2) + minitorch.max(x2, 2) + minitorch.max(x3, 2)
-        x = self.fc(x.view(x.shape[0], self.feature_map_size))
+        rnn_out, hidden = self.rnn(embeddings)
+        x = hidden.view(hidden.shape[0], self.hidden_size)
+        x = self.fc(x)
         x = minitorch.dropout(x, 0.2, not self.training)
         return x.sigmoid().view(x.shape[0])
-    
-    
+
+
 def default_log_fn(epoch, total_loss, correct, total):
     print(
         f"Epoch {epoch} | loss {total_loss / total:.2f} | valid acc {correct / total:.2f}"
@@ -56,7 +49,7 @@ def train(
     learning_rate=1e-2,
     max_epochs=50,
     log_fn=default_log_fn,
-):  
+):
     optim = minitorch.RMSProp(model.parameters(), learning_rate)
     best_val_acc = float('-inf')
     for epoch in range(1, max_epochs + 1):
@@ -74,7 +67,7 @@ def train(
             total_loss += loss.item()
             optim.step()
             pbar.set_postfix(loss=loss.item())
-            
+
             if logger:
                 logger.add_scalar('Loss/train', loss.item(), (epoch - 1) * len(train_loader) + (i + 1))
 
@@ -88,23 +81,25 @@ def train(
             correct += (preds == y_val).sum().item()
             total += y_val.shape[0]
             pbar.set_postfix(acc=correct / total * 100)
-            
+
         if best_val_acc < correct / total:
             best_val_acc = correct / total
-            model.save_weights("sentiment_model.npz")
-            print("Model saved to mnist_model.npz")
-                
-        logger.add_scalar('Accuracy/val', correct / total * 100, epoch)
+            model.save_weights("sentiment_rnn_model.npz")
+            print(f"Model saved to sentiment_rnn_model.npz (val acc: {best_val_acc:.4f})")
+
+        if logger:
+            logger.add_scalar('Accuracy/val', correct / total * 100, epoch)
         log_fn(epoch, total_loss, correct, total)
-        
-        
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--backend", default="cpu", help="backend mode")
     parser.add_argument("--batch_size", type=int, default=16, help="Batch size for training")
-    parser.add_argument("--epochs", type=int, default=1, help="Number of epochs to train for")
+    parser.add_argument("--epochs", type=int, default=10, help="Number of epochs to train for")
     parser.add_argument("--lr", type=float, default=0.01, help="Learning rate")
-    parser.add_argument("--data_dir", type=str, default="/home/minh/datasets/", help="Directory containing MNIST dataset")
+    parser.add_argument("--hidden_size", type=int, default=100, help="RNN hidden size")
+    parser.add_argument("--data_dir", type=str, default="/home/minh/datasets/", help="Directory containing sentiment dataset")
     parser.add_argument("--log_dir", type=str, default=None, help="Directory to log training parameters")
     args = parser.parse_args()
 
@@ -116,7 +111,7 @@ if __name__ == "__main__":
             print("CUDA backend not available, using CPU instead.", file=sys.stderr)
         backend = FastTensorBackend
         print("Using CPU backend")
-        
+
     emb_lookup = embeddings.GloveEmbedding("wikipedia_gigaword", d_emb=50, show_progress=True)
     ds = uci_sentiment.UCISentimentDataset(root=args.data_dir, emb_lookup=emb_lookup)
     sentiment_train, sentiment_val = train_test_split(ds, test_size=0.2, random_state=42)
@@ -132,9 +127,9 @@ if __name__ == "__main__":
         shuffle=False,
         backend=backend
     )
-    
-    model = CNNSentiment(feature_map_size=100, embedding_size=50, filter_sizes=[3, 4, 5], backend=backend)
-    
+
+    model = RNNSentiment(embedding_size=50, hidden_size=args.hidden_size, backend=backend)
+
     logger = None
     if args.log_dir:
         if os.path.exists(args.log_dir):
