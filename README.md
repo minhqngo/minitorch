@@ -15,7 +15,7 @@ pip install -r requirements.txt
 ```python
 import minitorch
 
-# Create tensors with different backends
+# Initiate backends
 FastTensorBackend = minitorch.TensorBackend(minitorch.FastOps)
 GPUBackend = minitorch.TensorBackend(minitorch.CudaOps)  # If CUDA is available
 
@@ -50,33 +50,30 @@ class Network(minitorch.Module):
 
 ```python
 class CNN(minitorch.Module):
-    def __init__(self, backend):
+    def __init__(self, backend=FastTensorBackend):
         super().__init__()
-        self.conv1 = minitorch.Conv2d(in_channels=1, out_channels=6, kernel=(5, 5), stride=1, backend=backend)
-        self.conv2 = minitorch.Conv2d(in_channels=6, out_channels=16, kernel=(5, 5), stride=1, backend=backend)
-        self.fc1 = minitorch.Linear(16 * 4 * 4, 120, backend=backend)
-        self.fc2 = minitorch.Linear(120, 10, backend=backend)
+        self.conv1 = minitorch.Conv2d(in_channels=1, out_channels=8, kernel=(3, 3), stride=1, backend=backend)
+        self.conv2 = minitorch.Conv2d(in_channels=8, out_channels=16, kernel=(3, 3), stride=1, backend=backend)
+        self.fc = minitorch.Linear(16 * 5 * 5, C, backend=backend)
 
     def forward(self, x):
         batch_size = x.shape[0]
         x = self.conv1(x).relu()
-        x = minitorch.avgpool2d(x, kernel=(2, 2), stride=(2, 2))
+        x = minitorch.maxpool2d(x, kernel=(2, 2), stride=(2, 2))
         x = self.conv2(x).relu()
-        x = minitorch.avgpool2d(x, kernel=(2, 2), stride=(2, 2))
-        x = x.view(batch_size, -1)
-        x = self.fc1(x).relu()
-        x = self.fc2(x)
+        x = minitorch.maxpool2d(x, kernel=(2, 2), stride=(2, 2))
+        x = x.view(batch_size, 16 * 5 * 5)
+        x = self.fc(x)
+        x = minitorch.logsoftmax(x, dim=1)
         return x
 ```
 
 ### Training Loop
 
 ```python
-# Initialize model and optimizer
 model = Network(backend=FastTensorBackend)
 optimizer = minitorch.RMSProp(model.parameters(), lr=0.01)
 
-# Training
 model.train()
 for epoch in range(num_epochs):
     for X_batch, y_batch in train_loader:
@@ -86,7 +83,6 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
 
-# Evaluation
 model.eval()
 for X_batch, y_batch in val_loader:
     output = model(X_batch)
@@ -140,7 +136,7 @@ model.load_weights("model.npz")
 
 ### Available Optimizers
 
-- `SGD(parameters, lr, momentum)` - Stochastic Gradient Descent with optional momentum
+- `SGD(parameters, lr, momentum)` - Stochastic Gradient Descent (momentum supported)
 - `RMSProp(parameters, lr, decay_rate, eps)` - RMSProp optimizer
 
 ### Available Loss Functions
@@ -152,10 +148,10 @@ model.load_weights("model.npz")
 
 ### Example: Training MNIST
 
-See `examples/run_mnist_multiclass.py` for a complete example of training a LeNet-5 CNN on MNIST:
+See `examples/train_mnist.py` for a complete example of training a simple CNN on MNIST dataset:
 
 ```bash
-python examples/run_mnist_multiclass.py --backend gpu --batch_size 32 --epochs 10 --lr 0.01
+python examples/train_mnist.py --backend gpu --batch_size 32 --epochs 10 --lr 0.01
 ```
 
 ## TODO
