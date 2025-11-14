@@ -8,7 +8,7 @@ import numpy as np
 from glob import glob
 
 
-def encode_sentences(sentences, max_length, emb_lookup, unk_emb, unks):
+def encode_sentences(sentences, max_length, emb_lookup, unk_emb):
     encoded_sents = []
     for sentence in sentences:
         sentence_emb = [[0] * emb_lookup.d_emb for _ in range(max_length)]
@@ -16,7 +16,6 @@ def encode_sentences(sentences, max_length, emb_lookup, unk_emb, unks):
             if w in emb_lookup:
                 sentence_emb[i][:] = emb_lookup.emb(w)
             else:
-                unks.add(w)
                 sentence_emb[i][:] = unk_emb
         encoded_sents.append(sentence_emb)
     return encoded_sents
@@ -82,10 +81,9 @@ class UCISentimentDataset:
         for sent in self.sentences:
             max_length = max(max_length, len(sent))
 
-        unks = set()
         unk_emb = [0.1 * (random.random() - 0.5) for i in range(self.emb_lookup.d_emb)]
 
-        self.samples = encode_sentences(self.sentences, max_length, self.emb_lookup, unk_emb, unks)
+        self.samples = encode_sentences(self.sentences, max_length, self.emb_lookup, unk_emb)
 
     def __len__(self):
         return len(self.sentences)
